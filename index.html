@@ -1,0 +1,3749 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TAKANEKO Studio Pro — 全身＋顔 2D VTuberトラッキングスタジオ</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --tk-pink: #F497B6;
+      --tk-pink-hot: #FF7BA9;
+      --tk-yellow: #FFD93D;
+      --tk-panel: rgba(17, 19, 28, 0.86);
+      --tk-border: rgba(255, 255, 255, 0.11);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #11131C;
+      font-family: 'M PLUS Rounded 1c', 'Inter', sans-serif;
+      color: #F3F4F6;
+      user-select: none;
+    }
+
+    /* Fullscreen Interactive Stage Canvas */
+    #stageCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      cursor: grab;
+      touch-action: none;
+    }
+    #stageCanvas:active {
+      cursor: grabbing;
+    }
+
+    /* Glassmorphism Panel Styling */
+    .glass-panel {
+      background: var(--tk-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--tk-border);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Custom Sleek Scrollbar */
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(244, 151, 182, 0.35);
+      border-radius: 999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(244, 151, 182, 0.65);
+    }
+
+    /* Range Sliders */
+    input[type="range"].tk-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.13);
+      outline: none;
+    }
+    input[type="range"].tk-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--tk-pink);
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 0 10px rgba(244, 151, 182, 0.65);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    input[type="range"].tk-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* ==================== 100% CLEAN UI HIDE SYSTEM ==================== */
+    .ui-element {
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    body.ui-hidden-all .ui-element {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    /* Optional Hover Restore Zone (ONLY active if user enables option) */
+    #hoverRestoreZone {
+      display: none;
+    }
+    body.ui-hidden-all.allow-hover-restore #hoverRestoreZone {
+      display: flex;
+    }
+    #hoverRestoreZone button {
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #hoverRestoreZone:hover button {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Sidebar Slide Collapse */
+    #sidebarDock.collapsed {
+      transform: translateX(calc(-100% - 24px));
+      pointer-events: none;
+    }
+
+    /* Active Cards & Tabs */
+    .tab-btn.active {
+      color: #FFFFFF;
+      background: rgba(244, 151, 182, 0.24);
+      border-color: rgba(244, 151, 182, 0.55);
+    }
+    .expr-card.active {
+      border-color: #F497B6;
+      background: rgba(244, 151, 182, 0.20);
+      box-shadow: 0 0 14px rgba(244, 151, 182, 0.28);
+    }
+    .bg-card.active {
+      border-color: #FFD93D;
+      box-shadow: 0 0 14px rgba(255, 217, 61, 0.32);
+    }
+    .mode-pill.active {
+      border-color: #F497B6;
+      background: rgba(244, 151, 182, 0.22);
+      color: #FFFFFF;
+    }
+
+    /* Animations */
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.38); opacity: 0.55; }
+    }
+    .status-pulse {
+      animation: pulseDot 1.6s infinite ease-in-out;
+    }
+
+    @keyframes toastFade {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .toast-show {
+      animation: toastFade 0.2s ease-out forwards;
+    }
+
+    @keyframes commentPop {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .comment-item {
+      animation: commentPop 0.25s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <!-- Fullscreen Main Stage Canvas -->
+  <canvas id="stageCanvas"></canvas>
+
+  <!-- Hidden Webcam Stream Video -->
+  <video id="webcamVideo" autoplay playsinline muted class="hidden"></video>
+
+  <!-- ==================== TOP HEADER BAR ==================== -->
+  <header class="ui-element fixed top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
+    <!-- Left: Menu Toggle + Brand + Live Status -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="toggleSidebarBtn" title="コントロールパネルを開閉"
+        class="glass-panel hover:bg-white/10 active:scale-95 transition px-3 py-2 rounded-2xl flex items-center gap-2 text-xs sm:text-sm font-bold">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 text-[#F497B6]" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h11" />
+        </svg>
+        <span class="hidden sm:inline">パネル</span>
+      </button>
+
+      <div class="glass-panel px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-[#FFD93D] to-[#F497B6] flex items-center justify-center shadow-inner">
+          <svg class="w-4 h-4 text-[#212121]" viewBox="0 0 24 24" fill="currentColor">
+            <ellipse cx="12" cy="15.5" rx="4.5" ry="3.6" />
+            <circle cx="6.8" cy="10.2" r="2.0" />
+            <circle cx="10.2" cy="7.5" r="2.0" />
+            <circle cx="14.2" cy="7.5" r="2.0" />
+            <circle cx="17.5" cy="10.2" r="2.0" />
+          </svg>
+        </div>
+        <div class="leading-tight">
+          <div class="text-xs sm:text-sm font-extrabold tracking-wide flex items-center gap-1">
+            <span>TAKANEKO</span>
+            <span class="text-[#F497B6]">Studio</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-md bg-[#FFD93D] text-[#18181B] font-extrabold">PRO</span>
+          </div>
+          <div class="text-[10px] text-gray-400 font-medium hidden md:block">Full-Body + Face 2D Rig Engine</div>
+        </div>
+      </div>
+
+      <!-- Mode & FPS Pill -->
+      <div class="glass-panel px-3 py-2 rounded-2xl hidden lg:flex items-center gap-2 text-xs font-bold">
+        <span id="headerStatusDot" class="w-2.5 h-2.5 rounded-full bg-[#FFD93D] status-pulse"></span>
+        <span id="headerStatusText" class="text-gray-200">マウス操作モード</span>
+        <span class="text-gray-600">|</span>
+        <span id="headerFps" class="font-mono text-[#F497B6]">60 FPS</span>
+      </div>
+    </div>
+
+    <!-- Right: Camera Start, Snapshot, Prominent Hide All UI Button -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="quickCamBtn"
+        class="px-3 sm:px-3.5 py-2 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition active:scale-95 bg-gradient-to-r from-[#F497B6] to-[#FF7BA9] text-[#18181B] shadow-lg shadow-pink-500/25 hover:brightness-105">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span id="quickCamLabel">カメラ開始</span>
+      </button>
+
+      <button id="snapshotBtn" title="現在の画面をPNG保存（透過プレビュー時は背景透過）"
+        class="glass-panel hover:bg-white/10 active:scale-95 transition p-2 sm:px-3 sm:py-2 rounded-2xl flex items-center gap-1.5 text-xs font-bold">
+        <svg class="w-4 h-4 text-[#FFD93D]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <circle cx="12" cy="13" r="3" />
+        </svg>
+        <span class="hidden xl:inline">PNG保存</span>
+      </button>
+
+      <button id="hideAllUiBtn" title="全てのUIを100%非表示にする (H / Tab)"
+        class="px-3 sm:px-3.5 py-2 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition active:scale-95 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 shadow-lg">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M3 3l18 18" />
+        </svg>
+        <span>全UI非表示 (H)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Optional Hover-Only Top-Right Restore Zone (OFF by default for 100% clean OBS) -->
+  <div id="hoverRestoreZone" class="fixed top-0 right-0 w-44 h-20 z-50 items-start justify-end p-3">
+    <button id="hoverRestoreBtn"
+      class="px-3.5 py-2 rounded-2xl bg-black/80 text-white text-xs font-bold border border-white/25 shadow-xl hover:bg-black">
+      UIを再表示 (H)
+    </button>
+  </div>
+
+  <!-- ==================== LEFT STUDIO CONTROL DOCK ==================== -->
+  <aside id="sidebarDock"
+    class="ui-element fixed top-16 bottom-12 left-3 z-20 w-[320px] sm:w-[348px] max-w-[calc(100vw-24px)] glass-panel rounded-3xl flex flex-col overflow-hidden transition-transform duration-300">
+    <!-- 4 Navigation Tabs -->
+    <div class="grid grid-cols-4 gap-1 p-2 border-b border-white/10 bg-black/25">
+      <button class="tab-btn active py-2 px-1 rounded-2xl text-[11px] font-bold border border-transparent transition flex flex-col items-center gap-0.5 text-gray-300 hover:text-white" data-tab="tracking">
+        <span>🦴</span><span>トラッキング</span>
+      </button>
+      <button class="tab-btn py-2 px-1 rounded-2xl text-[11px] font-bold border border-transparent transition flex flex-col items-center gap-0.5 text-gray-300 hover:text-white" data-tab="expressions">
+        <span>😺</span><span>表情・動き</span>
+      </button>
+      <button class="tab-btn py-2 px-1 rounded-2xl text-[11px] font-bold border border-transparent transition flex flex-col items-center gap-0.5 text-gray-300 hover:text-white" data-tab="background">
+        <span>🎨</span><span>背景・シーン</span>
+      </button>
+      <button class="tab-btn py-2 px-1 rounded-2xl text-[11px] font-bold border border-transparent transition flex flex-col items-center gap-0.5 text-gray-300 hover:text-white" data-tab="physics">
+        <span>⚙️</span><span>物理・設定</span>
+      </button>
+    </div>
+
+    <!-- Scrollable Tab Body -->
+    <div class="flex-1 overflow-y-auto custom-scroll p-3.5 space-y-4">
+
+      <!-- ===== TAB 1: TRACKING ===== -->
+      <section id="tab-tracking" class="tab-panel space-y-3.5">
+        <!-- Camera Launch & Calibration Card -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-extrabold text-[#F497B6]">全身＋顔 同時トラッキング</span>
+            <span id="camStateBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-gray-300 font-bold">待機中</span>
+          </div>
+
+          <!-- Progress bar while downloading MediaPipe models -->
+          <div id="modelLoadingBar" class="hidden space-y-1.5">
+            <div class="flex justify-between text-[10px] text-amber-300 font-bold">
+              <span id="modelLoadingText">MediaPipeモデル読込中...</span>
+              <span id="modelLoadingPct">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="modelLoadingFill" class="h-full bg-gradient-to-r from-[#FFD93D] to-[#F497B6] transition-all duration-300" style="width: 10%"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="dockCamBtn"
+              class="py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-[#F497B6] to-[#FF7BA9] text-[#18181B] hover:brightness-105 active:scale-95 transition">
+              ▶ カメラ開始
+            </button>
+            <button id="calibrateBtn"
+              class="py-2.5 px-3 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/15 active:scale-95 transition text-white border border-white/10">
+              🎯 キャリブレーション
+            </button>
+          </div>
+
+          <!-- Real-Time Detection Badges -->
+          <div class="grid grid-cols-3 gap-1.5 pt-1">
+            <div class="px-2 py-1.5 rounded-xl bg-black/30 border border-white/5 text-center">
+              <div class="text-[9px] text-gray-400">顔 (Face)</div>
+              <div id="detFaceBadge" class="text-[10px] font-extrabold text-gray-400">待機中</div>
+            </div>
+            <div class="px-2 py-1.5 rounded-xl bg-black/30 border border-white/5 text-center">
+              <div class="text-[9px] text-gray-400">上半身・腕</div>
+              <div id="detUpperBadge" class="text-[10px] font-extrabold text-gray-400">待機中</div>
+            </div>
+            <div class="px-2 py-1.5 rounded-xl bg-black/30 border border-white/5 text-center">
+              <div class="text-[9px] text-gray-400">下半身・脚</div>
+              <div id="detLowerBadge" class="text-[10px] font-extrabold text-sky-300">自動補完</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 Tracking Modes -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-gray-300">トラッキングモード (5種)</label>
+            <span class="text-[10px] text-gray-400">用途に合わせて切替</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button data-mode="fullbody" class="mode-pill py-2 px-2.5 rounded-xl text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              🧍 全身＋顔 <span class="block text-[9px] text-gray-400 font-normal">カメラ標準フルボディ</span>
+            </button>
+            <button data-mode="upperbody" class="mode-pill py-2 px-2.5 rounded-xl text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              💻 上半身＋顔 <span class="block text-[9px] text-gray-400 font-normal">デスク配信・座り向け</span>
+            </button>
+            <button data-mode="faceonly" class="mode-pill py-2 px-2.5 rounded-xl text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              😺 顔のみ <span class="block text-[9px] text-gray-400 font-normal">軽量フェイストラック</span>
+            </button>
+            <button data-mode="mouse" class="mode-pill active py-2 px-2.5 rounded-xl text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              🖱️ マウス操作 <span class="block text-[9px] text-gray-400 font-normal">カメラ無しで全身操作</span>
+            </button>
+            <button data-mode="auto" class="mode-pill col-span-2 py-2 px-2.5 rounded-xl text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 transition flex items-center justify-between">
+              <span>✨ オートデモ（全身自律アクション）</span>
+              <span class="text-[9px] text-[#FFD93D]">おすすめ</span>
+            </button>
+          </div>
+          <p id="mouseModeHint" class="text-[10px] text-gray-400 leading-relaxed px-1">
+            💡 マウス操作時：カーソル移動で顔・視線・両腕が追従／左ドラッグで移動／右クリック押しっぱなしでバンザイ！
+          </p>
+        </div>
+
+        <!-- Quick Tracking Toggles -->
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition">
+            <div>
+              <div class="text-xs font-bold">🎙️ マイク音声リップシンク</div>
+              <div class="text-[10px] text-gray-400">声の大きさに連動して口パク（カメラと併用可）</div>
+            </div>
+            <input id="micToggle" type="checkbox" class="w-4 h-4 accent-[#F497B6] cursor-pointer" />
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition">
+            <div>
+              <div class="text-xs font-bold">🪞 左右ミラー反転</div>
+              <div class="text-[10px] text-gray-400">鏡のように自分の動きと同じ方向に動かす</div>
+            </div>
+            <input id="mirrorToggle" type="checkbox" checked class="w-4 h-4 accent-[#F497B6] cursor-pointer" />
+          </label>
+
+          <label class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition">
+            <div>
+              <div class="text-xs font-bold">🦴 スケルトン確認カメラ小窓</div>
+              <div class="text-[10px] text-gray-400">右下に全身骨格＋顔キーポイントを表示</div>
+            </div>
+            <input id="pipToggle" type="checkbox" checked class="w-4 h-4 accent-[#F497B6] cursor-pointer" />
+          </label>
+        </div>
+      </section>
+
+      <!-- ===== TAB 2: EXPRESSIONS & MOTIONS ===== -->
+      <section id="tab-expressions" class="tab-panel hidden space-y-4">
+        <!-- 6 Expressions -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-gray-300">表情プリセット (キー 1〜6)</span>
+            <span class="text-[10px] text-gray-400">公式設定画 6種完全再現</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-expr="normal" class="expr-card active p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">😺</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">1</span>
+              </div>
+              <div class="text-xs font-bold mt-1">通常スマイル</div>
+              <div class="text-[10px] text-gray-400">元気なたかねこ</div>
+            </button>
+
+            <button data-expr="happy" class="expr-card p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">😆</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">2</span>
+              </div>
+              <div class="text-xs font-bold mt-1">ニコニコ (&gt; &lt;)</div>
+              <div class="text-[10px] text-gray-400">全力えがお！</div>
+            </button>
+
+            <button data-expr="sparkle" class="expr-card p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">🤩</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">3</span>
+              </div>
+              <div class="text-xs font-bold mt-1">キラキラ星目</div>
+              <div class="text-[10px] text-gray-400">ワクワク神回！</div>
+            </button>
+
+            <button data-expr="calm" class="expr-card p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">😌</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">4</span>
+              </div>
+              <div class="text-xs font-bold mt-1">まったり閉じ目</div>
+              <div class="text-[10px] text-gray-400">おだやかリラックス</div>
+            </button>
+
+            <button data-expr="surprised" class="expr-card p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">😱</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">5</span>
+              </div>
+              <div class="text-xs font-bold mt-1">びっくり</div>
+              <div class="text-[10px] text-gray-400">ハッ！と驚き顔</div>
+            </button>
+
+            <button data-expr="blush" class="expr-card p-2.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition text-left">
+              <div class="flex items-center justify-between">
+                <span class="text-lg">☺️</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 font-mono">6</span>
+              </div>
+              <div class="text-xs font-bold mt-1">照れ笑い</div>
+              <div class="text-[10px] text-gray-400">ほっぺぽかぽか</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Full-Body One-Click Actions -->
+        <div class="space-y-2">
+          <span class="text-xs font-bold text-gray-300">ワンクリック全身アクション</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-motion="wave" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-[#F497B6]/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              🐾 お手振り
+            </button>
+            <button data-motion="banzai" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-[#FFD93D]/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              🙌 バンザイ！
+            </button>
+            <button data-motion="jump" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-emerald-400/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              ⬆️ ジャンプ
+            </button>
+            <button data-motion="dance" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-purple-400/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              🎵 ハッピーダンス
+            </button>
+            <button data-motion="tilt" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-sky-400/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              💫 首かしげ
+            </button>
+            <button data-motion="shock" class="motion-btn py-2.5 px-3 rounded-xl bg-white/5 hover:bg-rose-400/20 border border-white/10 text-xs font-bold active:scale-95 transition">
+              ⚡ びっくり！
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TAB 3: BACKGROUND & SCENE ===== -->
+      <section id="tab-background" class="tab-panel hidden space-y-4">
+        <!-- Scene Mode Switch -->
+        <div class="space-y-2">
+          <span class="text-xs font-bold text-gray-300">シーンモード切替</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="sceneFullBodyBtn" class="scene-btn py-2.5 px-3 rounded-2xl border-2 border-[#F497B6] bg-[#F497B6]/20 text-xs font-bold text-left transition">
+              <div>🧍 全身立ち絵</div>
+              <div class="text-[9px] text-gray-300 font-normal mt-0.5">全身トラッキング＆接地影</div>
+            </button>
+            <button id="sceneDeskBtn" class="scene-btn py-2.5 px-3 rounded-2xl border-2 border-white/10 bg-white/5 text-xs font-bold text-left transition hover:bg-white/10">
+              <div>🎮 配信デスク</div>
+              <div class="text-[9px] text-gray-400 font-normal mt-0.5">チェア・キーボード・マイク</div>
+            </button>
+          </div>
+
+          <label id="liveChatToggleWrap" class="hidden flex items-center justify-between p-2.5 rounded-xl bg-[#FFD93D]/10 border border-[#FFD93D]/30 cursor-pointer">
+            <div>
+              <div class="text-xs font-bold text-[#FFD93D]">💬 ライブ風コメント欄を表示</div>
+              <div class="text-[10px] text-gray-300">設定画右下のコメントUIを再現（全UI非表示時は自動消去）</div>
+            </div>
+            <input id="liveChatToggle" type="checkbox" checked class="w-4 h-4 accent-[#FFD93D] cursor-pointer" />
+          </label>
+        </div>
+
+        <!-- Chroma Key Backgrounds -->
+        <div class="space-y-2">
+          <span class="text-xs font-bold text-gray-300">クロマキー背景 (OBS切り抜き)</span>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-bg="green" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-center">
+              <div class="h-9 rounded-xl bg-[#00FF00] mb-1"></div>
+              <div class="text-[11px] font-bold">グリーン</div>
+            </button>
+            <button data-bg="blue" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-center">
+              <div class="h-9 rounded-xl bg-[#0000FF] mb-1"></div>
+              <div class="text-[11px] font-bold">ブルー</div>
+            </button>
+            <button data-bg="magenta" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-center">
+              <div class="h-9 rounded-xl bg-[#FF00FF] mb-1"></div>
+              <div class="text-[11px] font-bold">マゼンタ</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Studio & Official Backgrounds -->
+        <div class="space-y-2">
+          <span class="text-xs font-bold text-gray-300">公式・スタジオ背景</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-bg="takanekoYellow" class="bg-card active p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-left">
+              <div class="h-11 rounded-xl bg-gradient-to-br from-[#FFF08A] via-[#FFD43B] to-[#F5A623] mb-1"></div>
+              <div class="text-[11px] font-bold">公式イエロー</div>
+              <div class="text-[9px] text-gray-400">TAKANEKOロゴ装飾</div>
+            </button>
+
+            <button data-bg="gamingRoom" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-left">
+              <div class="h-11 rounded-xl bg-gradient-to-br from-[#2B2639] via-[#1C1B28] to-[#11121A] mb-1 relative overflow-hidden">
+                <div class="absolute right-2 bottom-2 w-4 h-4 rounded-full bg-amber-400/50 blur-[3px]"></div>
+              </div>
+              <div class="text-[11px] font-bold">おしゃれ配信ルーム</div>
+              <div class="text-[9px] text-gray-400">観葉植物＆間接照明</div>
+            </button>
+
+            <button data-bg="darkStudio" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-left">
+              <div class="h-11 rounded-xl bg-gradient-to-b from-[#1F2438] to-[#0C0E16] mb-1"></div>
+              <div class="text-[11px] font-bold">ダークスタジオ</div>
+              <div class="text-[9px] text-gray-400">高級リムライト演出</div>
+            </button>
+
+            <button data-bg="checker" class="bg-card p-2 rounded-2xl border-2 border-white/15 hover:scale-[1.02] transition text-left">
+              <div class="h-11 rounded-xl mb-1" style="background-image: linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%); background-size: 12px 12px; background-position: 0 0, 0 6px, 6px -6px, -6px 0px; background-color: #20222A;"></div>
+              <div class="text-[11px] font-bold">透過プレビュー</div>
+              <div class="text-[9px] text-gray-400">PNG保存で背景透過</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Color & Image Upload -->
+        <div class="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-gray-300">カスタム単色背景</span>
+            <input id="customColorPicker" type="color" value="#1E293B" class="w-10 h-7 rounded-lg cursor-pointer bg-transparent border border-white/20" />
+          </div>
+          <label class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 cursor-pointer text-xs font-bold transition">
+            <span>🖼️ カスタム背景画像をアップロード</span>
+            <input id="bgImageInput" type="file" accept="image/*" class="hidden" />
+          </label>
+        </div>
+      </section>
+
+      <!-- ===== TAB 4: PHYSICS & SETTINGS ===== -->
+      <section id="tab-physics" class="tab-panel hidden space-y-3.5">
+        <!-- Sensitivity & Smoothing Sliders -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+          <div class="text-xs font-extrabold text-[#F497B6]">トラッキング感度・物理演算</div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="font-bold text-gray-300">体全体の移動範囲</span>
+              <span id="valMoveRange" class="font-mono text-[#F497B6]">1.00x</span>
+            </div>
+            <input id="moveRangeSlider" type="range" min="0.2" max="2.0" step="0.05" value="1.0" class="tk-slider" />
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="font-bold text-gray-300">両腕の追従感度</span>
+              <span id="valArmSens" class="font-mono text-[#F497B6]">1.15x</span>
+            </div>
+            <input id="armSensSlider" type="range" min="0.4" max="1.8" step="0.05" value="1.15" class="tk-slider" />
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="font-bold text-gray-300">両脚の追従感度</span>
+              <span id="valLegSens" class="font-mono text-[#F497B6]">1.10x</span>
+            </div>
+            <input id="legSensSlider" type="range" min="0.3" max="1.8" step="0.05" value="1.10" class="tk-slider" />
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="font-bold text-gray-300">スムージング（滑らかさ）</span>
+              <span id="valSmooth" class="font-mono text-[#F497B6]">0.28</span>
+            </div>
+            <input id="smoothSlider" type="range" min="0.08" max="0.60" step="0.02" value="0.28" class="tk-slider" />
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="font-bold text-gray-300">物理揺れの強さ（葉っぱ・紐・耳・しっぽ）</span>
+              <span id="valPhysics" class="font-mono text-[#FFD93D]">1.15x</span>
+            </div>
+            <input id="physicsSlider" type="range" min="0.0" max="2.0" step="0.05" value="1.15" class="tk-slider" />
+          </div>
+        </div>
+
+        <!-- UI Hide Options (100% Clean OBS Configuration) -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+          <div class="text-xs font-extrabold text-emerald-400">全UI非表示 (OBS) オプション</div>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="pr-2">
+              <div class="text-[11px] font-bold">非表示時の操作ガイド通知</div>
+              <div class="text-[9px] text-gray-400">OFFにすると通知も出さず即クリーン化</div>
+            </div>
+            <input id="hideGuideToastToggle" type="checkbox" checked class="w-4 h-4 accent-emerald-400 cursor-pointer" />
+          </label>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="pr-2">
+              <div class="text-[11px] font-bold">右上ホバーで復帰ボタンを表示</div>
+              <div class="text-[9px] text-gray-400">標準OFF＝100%ボタン無し（H/Esc/ダブルクリックで復帰）</div>
+            </div>
+            <input id="hoverRestoreToggle" type="checkbox" class="w-4 h-4 accent-emerald-400 cursor-pointer" />
+          </label>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="pr-2">
+              <div class="text-[11px] font-bold">オートまばたき（カメラ非使用時）</div>
+              <div class="text-[9px] text-gray-400">マウス/デモ時に自然な瞬きを再生</div>
+            </div>
+            <input id="autoBlinkToggle" type="checkbox" checked class="w-4 h-4 accent-[#F497B6] cursor-pointer" />
+          </label>
+        </div>
+
+        <!-- Stage Position & Scale Reset -->
+        <div class="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+          <div class="text-[10px] text-gray-400 leading-tight">
+            ドラッグで移動／ホイールで拡縮<br/>ダブルクリックでUI非表示時は復帰
+          </div>
+          <button id="resetStageBtn" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition shrink-0">
+            位置リセット
+          </button>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ==================== LIVE STREAM COMMENT BOX (Desk Mode Optional) ==================== -->
+  <div id="liveCommentBox"
+    class="ui-element hidden fixed top-16 right-3 z-20 w-[260px] sm:w-[285px] max-h-[340px] glass-panel rounded-3xl overflow-hidden border border-[#FFD93D]/40 flex flex-col">
+    <div class="px-3.5 py-2 bg-gradient-to-r from-[#FFD93D] to-[#F5B01C] text-[#18181B] flex items-center justify-between">
+      <span class="text-xs font-extrabold tracking-wider flex items-center gap-1.5">
+        <span>🐾</span> COMMENTS
+      </span>
+      <span class="text-[10px] font-bold bg-black/15 px-2 py-0.5 rounded-full">LIVE</span>
+    </div>
+    <div id="commentFeed" class="flex-1 overflow-y-auto custom-scroll p-2.5 space-y-2 text-xs max-h-[235px]">
+      <!-- Populated dynamically -->
+    </div>
+    <form id="commentForm" class="p-2 border-t border-white/10 bg-black/25 flex items-center gap-1.5">
+      <input id="commentInput" type="text" placeholder="コメントを入力..."
+        class="flex-1 bg-white/10 rounded-xl px-2.5 py-1.5 text-[11px] text-white placeholder-gray-400 outline-none focus:ring-1 focus:ring-[#FFD93D]" />
+      <button type="submit" class="px-2.5 py-1.5 rounded-xl bg-[#FFD93D] text-[#18181B] text-[11px] font-extrabold hover:brightness-105">
+        送信
+      </button>
+    </form>
+  </div>
+
+  <!-- ==================== WEBCAM SKELETON PIP PREVIEW ==================== -->
+  <div id="pipContainer"
+    class="ui-element hidden fixed bottom-12 right-3 z-20 w-[225px] sm:w-[260px] glass-panel rounded-2xl overflow-hidden">
+    <div class="px-2.5 py-1.5 bg-black/50 border-b border-white/10 flex items-center justify-between text-[10px] font-bold">
+      <span class="flex items-center gap-1.5 text-emerald-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 status-pulse"></span>
+        FULL-BODY SKELETON
+      </span>
+      <span id="pipFps" class="font-mono text-gray-300">-- FPS</span>
+    </div>
+    <div class="relative w-full aspect-[4/3] bg-black">
+      <canvas id="pipCanvas" class="w-full h-full block"></canvas>
+      <!-- Mini overlay badges inside PIP -->
+      <div class="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 pointer-events-none">
+        <span id="pipBadgeFace" class="px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-gray-300">顔:--</span>
+        <span id="pipBadgeUpper" class="px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-gray-300">腕:--</span>
+        <span id="pipBadgeLower" class="px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-sky-300">脚:自動</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== BOTTOM STATUS BAR ==================== -->
+  <footer class="ui-element fixed bottom-2.5 left-3 right-3 z-20 pointer-events-none flex items-center justify-between">
+    <div class="glass-panel px-3 py-1.5 rounded-2xl text-[10px] text-gray-300 flex items-center gap-2.5 pointer-events-auto">
+      <span><kbd class="px-1 py-0.5 rounded bg-white/10 font-mono text-[#FFD93D]">H</kbd> 全UI非表示/復帰</span>
+      <span class="hidden sm:inline"><kbd class="px-1 py-0.5 rounded bg-white/10 font-mono text-[#F497B6]">1-6</kbd> 表情</span>
+      <span class="hidden md:inline"><kbd class="px-1 py-0.5 rounded bg-white/10 font-mono text-emerald-300">Space</kbd> ジャンプ</span>
+      <span class="hidden md:inline"><kbd class="px-1 py-0.5 rounded bg-white/10 font-mono text-sky-300">C</kbd> キャリブレーション</span>
+    </div>
+    <div class="glass-panel px-3 py-1.5 rounded-2xl text-[10px] text-gray-400 hidden sm:flex items-center gap-2 pointer-events-auto">
+      <span>復帰: H / Esc / ダブルクリック / 2秒長押し</span>
+    </div>
+  </footer>
+
+  <!-- ==================== TRANSIENT TOAST NOTIFICATION ==================== -->
+  <!-- Note: intentionally NOT tagged .ui-element so the 2.5s guide toast can show briefly upon hiding UI, then disappears 100% -->
+  <div id="toastBox"
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-[#11131C]/90 backdrop-blur-md text-xs sm:text-sm font-bold text-white hidden shadow-2xl border border-[#F497B6]/45 text-center max-w-[92vw] pointer-events-none">
+  </div>
+
+  <!-- ==================== MAIN ENGINE (ES MODULE) ==================== -->
+  <script type="module">
+    /**
+     * TAKANEKO Studio Pro — Full-Body + Face Real-Time 2D VTuber Tracking Application
+     *
+     * Architecture Overview:
+     *  1. Damped Harmonic Oscillator (Spring1D) & Multi-Node Rope Physics (drawstrings, tail)
+     *  2. Full-Body Skeleton Rig State (Torso Pose, 2-Bone Arms L/R with Palm Orientation, 2-Bone Legs L/R with Visibility Fallback, Face Params)
+     *  3. High-Precision Layered Vector Renderer for "たかねこ (TAKANEKO)" with Seamless Capsule/Bezier Joint Interpolation
+     *  4. Dual MediaPipe Vision Engine (FaceLandmarker 478pts + PoseLandmarker 33pts) + Web Audio Mic Lip-Sync + Mouse/Auto Fallbacks
+     *  5. 100% Clean OBS UI Hide System (H / Tab / Esc / Double-Click / 2s Long-Press + Optional Hover Restore)
+     */
+
+    // =========================================================================
+    // 1. MATH & PHYSICS HELPERS
+    // =========================================================================
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const lerpAngle = (a, b, t) => {
+      let diff = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
+      if (diff < -Math.PI) diff += Math.PI * 2;
+      return a + diff * t;
+    };
+
+    class Spring1D {
+      constructor(stiffness = 140, damping = 12) {
+        this.value = 0;
+        this.velocity = 0;
+        this.stiffness = stiffness;
+        this.damping = damping;
+      }
+      step(dt, target, impulse = 0) {
+        const force = (target - this.value) * this.stiffness;
+        const damper = -this.velocity * this.damping;
+        this.velocity += (force + damper) * dt + impulse;
+        this.value += this.velocity * dt;
+        return this.value;
+      }
+    }
+
+    // Transient Toast System (never uses alert/confirm)
+    let toastTimer = null;
+    function showToast(msg, duration = 2600) {
+      const el = document.getElementById('toastBox');
+      el.textContent = msg;
+      el.classList.remove('hidden', 'toast-show');
+      void el.offsetWidth;
+      el.classList.add('toast-show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.add('hidden');
+      }, duration);
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & FULL-BODY + FACE RIG PARAMETERS
+    // =========================================================================
+    const appState = {
+      mode: 'mouse', // 'fullbody' | 'upperbody' | 'faceonly' | 'mouse' | 'auto'
+      cameraActive: false,
+      cameraLoading: false,
+      mirror: true,
+      showPip: true,
+      autoBlink: true,
+      micActive: false,
+      micVolume: 0,
+      sceneMode: 'fullbody', // 'fullbody' | 'desk'
+      showLiveChat: true,
+      expression: 'normal', // normal, happy, sparkle, calm, surprised, blush
+      bgType: 'takanekoYellow',
+      customColor: '#1E293B',
+      customBgImage: null,
+
+      // Sensitivity & Physics
+      moveRange: 1.0,
+      armSens: 1.15,
+      legSens: 1.10,
+      smoothing: 0.28,
+      physicsIntensity: 1.15,
+
+      // 100% UI Hide System
+      uiHidden: false,
+      showHideGuideToast: true,
+      allowHoverRestore: false,
+
+      // Stage Pan & Zoom
+      stageX: 0,
+      stageY: 0,
+      stageScale: 1.0,
+
+      // Mouse interaction
+      mouseX: 0,
+      mouseY: 0,
+      rightMouseDown: false,
+      mouseTalkBoost: 0,
+
+      // Calibration Neutral Reference
+      calib: {
+        headYaw: 0, headPitch: 0, headRoll: 0,
+        bodyX: 0.5, bodyY: 0.45, shoulderW: 0.28,
+        torsoRoll: 0, torsoYaw: 0,
+      },
+      rawDetect: {
+        faceDetected: false,
+        upperDetected: false,
+        lowerDetected: false,
+        lowerConfidence: 0,
+        headYaw: 0, headPitch: 0, headRoll: 0,
+        bodyX: 0.5, bodyY: 0.45, shoulderW: 0.28,
+        torsoRoll: 0, torsoYaw: 0,
+      },
+
+      // Active One-Shot Motion
+      motion: { type: null, time: 0, duration: 1.0 },
+
+      // Auto Blink & Cute Ear Twitch
+      blinkTimer: 2.3,
+      blinkProgress: 0,
+      isBlinking: false,
+      earTwitchTimer: 4.0,
+      earTwitchSide: 1,
+      earTwitchVal: 0,
+      typingEnergy: 0,
+    };
+
+    // Rig Target & Smoothed Values (Face + Full Body Bones)
+    const targetRig = {
+      // Face
+      headYaw: 0,       // -35..35 deg
+      headPitch: 0,     // -30..35 deg (positive = look down -> shows top-of-head tabby stripes!)
+      headRoll: 0,      // -32..32 deg
+      eyeLOpen: 1,      // 0..1
+      eyeROpen: 1,      // 0..1
+      gazeX: 0,         // -1..1
+      gazeY: 0,         // -1..1
+      browY: 0,         // -1..1
+      mouthOpen: 0.35,  // 0..1
+      mouthSmile: 0.6,  // 0..1
+
+      // Torso / Root Body
+      bodyX: 0,         // -1..1 normalized screen shift
+      bodyY: 0,         // -1..1 normalized vertical shift (squat/jump)
+      bodyScale: 1.0,   // depth proximity scale (0.75..1.35)
+      torsoYaw: 0,      // -25..25 deg 2.5D parallax twist
+      torsoRoll: 0,     // -22..22 deg lean left/right
+      hipShiftX: 0,     // -24..24 px weight shift
+      squatAmount: 0,   // 0..1 knee bend / crouch
+      breath: 0,        // 0..1
+
+      // Arms (Angles in radians relative to straight down = 0; outward positive for Right (+1), negative for Left (-1))
+      // Convention: Standard canvas angle (0 = right, PI/2 = down, -PI/2 = up, PI = left)
+      armLUpper: Math.PI * 0.64,  // Viewer's left arm hanging slightly outward
+      armLFore: Math.PI * 0.58,
+      armLStretch: 1.0,
+      armLPalmShow: 0.0,          // 0..1 visibility of pink paw pad on palm
+
+      armRUpper: Math.PI * 0.36,  // Viewer's right arm hanging slightly outward
+      armRFore: Math.PI * 0.42,
+      armRStretch: 1.0,
+      armRPalmShow: 0.0,
+
+      // Legs (Standard canvas angle: PI/2 = straight down)
+      legLThigh: Math.PI * 0.52,
+      legLShin: Math.PI * 0.50,
+      legLLift: 0,                // 0..1 foot lifted off ground
+
+      legRThigh: Math.PI * 0.48,
+      legRShin: Math.PI * 0.50,
+      legRLift: 0,
+    };
+
+    const rig = { ...targetRig };
+
+    // Multi-Joint Spring Physics Bank
+    const springs = {
+      earL: new Spring1D(165, 11),
+      earR: new Spring1D(165, 11),
+      leafMain: new Spring1D(105, 7.2),
+      leafSub: new Spring1D(88, 6.2),
+      // 2-Segment Pendulum Springs for Left & Right Hoodie Drawstrings
+      strL1: new Spring1D(90, 6.4),
+      strL2: new Spring1D(72, 5.4),
+      strR1: new Spring1D(90, 6.4),
+      strR2: new Spring1D(72, 5.4),
+      // Headphones bounce & sway
+      hpY: new Spring1D(135, 11),
+      hpRot: new Spring1D(115, 9),
+      // 3-Segment Striped Cat Tail Physics
+      tail1: new Spring1D(65, 5.8),
+      tail2: new Spring1D(52, 4.9),
+      tail3: new Spring1D(44, 4.4),
+      // Jump impulse vertical spring
+      jumpY: new Spring1D(185, 14),
+    };
+
+    // Velocity tracking for physics impulses
+    let prevHeadYaw = 0, prevHeadPitch = 0, prevHeadRoll = 0, prevBodyX = 0, prevBodyY = 0;
+
+    // Sparkles for Sparkle expression
+    const sparkles = Array.from({ length: 10 }, (_, i) => ({
+      angle: (i / 10) * Math.PI * 2,
+      radius: 165 + (i % 3) * 32,
+      speed: 0.55 + (i % 4) * 0.22,
+      size: 6 + (i % 3) * 3.8,
+      phase: i * 0.85,
+    }));
+
+    // =========================================================================
+    // 3. CANVAS SETUP & RESPONSIVE DPR
+    // =========================================================================
+    const canvas = document.getElementById('stageCanvas');
+    const ctx = canvas.getContext('2d');
+    let stageW = window.innerWidth;
+    let stageH = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      stageW = window.innerWidth;
+      stageH = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(stageW * dpr);
+      canvas.height = Math.floor(stageH * dpr);
+      canvas.style.width = `${stageW}px`;
+      canvas.style.height = `${stageH}px`;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // =========================================================================
+    // 4. VECTOR HELPERS & BACKGROUND RENDERER
+    // =========================================================================
+    const OUTLINE = '#212121';
+    const PINK_MAIN = '#F497B6';
+    const PINK_LIGHT = '#F8BBD0';
+    const HOODIE_DARK = '#24252A';
+    const HOODIE_MID = '#2F3138';
+    const HOODIE_DEEP = '#191A1F';
+
+    function drawPawPrint(ctx, x, y, size, rotation = 0, fillColor = PINK_MAIN, strokeColor = null, strokeW = 0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      ctx.fillStyle = fillColor;
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeW;
+      }
+
+      // Main pad
+      ctx.beginPath();
+      ctx.moveTo(0, -size * 0.18);
+      ctx.bezierCurveTo(size * 0.44, -size * 0.18, size * 0.56, size * 0.26, size * 0.32, size * 0.45);
+      ctx.bezierCurveTo(size * 0.15, size * 0.54, -size * 0.15, size * 0.54, -size * 0.32, size * 0.45);
+      ctx.bezierCurveTo(-size * 0.56, size * 0.26, -size * 0.44, -size * 0.18, 0, -size * 0.18);
+      ctx.closePath();
+      ctx.fill();
+      if (strokeColor) ctx.stroke();
+
+      // 4 Toe beans
+      const toes = [
+        { x: -0.46, y: -0.22, rx: 0.16, ry: 0.21, r: -0.35 },
+        { x: -0.17, y: -0.46, rx: 0.16, ry: 0.22, r: -0.12 },
+        { x: 0.17, y: -0.46, rx: 0.16, ry: 0.22, r: 0.12 },
+        { x: 0.46, y: -0.22, rx: 0.16, ry: 0.21, r: 0.35 },
+      ];
+      for (const t of toes) {
+        ctx.beginPath();
+        ctx.ellipse(t.x * size, t.y * size, t.rx * size, t.ry * size, t.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (strokeColor) ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawFourPointStar(ctx, x, y, r, color, alpha = 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(x, y);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const inner = r * 0.34;
+      for (let i = 0; i < 8; i++) {
+        const ang = (i * Math.PI) / 4;
+        const rad = i % 2 === 0 ? r : inner;
+        const px = Math.cos(ang) * rad;
+        const py = Math.sin(ang) * rad;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBackground(ctx, w, h, time, forTransparentExport = false) {
+      if (forTransparentExport && appState.bgType === 'checker') {
+        ctx.clearRect(0, 0, w, h);
+        return;
+      }
+
+      switch (appState.bgType) {
+        case 'green':
+          ctx.fillStyle = '#00FF00';
+          ctx.fillRect(0, 0, w, h);
+          break;
+        case 'blue':
+          ctx.fillStyle = '#0000FF';
+          ctx.fillRect(0, 0, w, h);
+          break;
+        case 'magenta':
+          ctx.fillStyle = '#FF00FF';
+          ctx.fillRect(0, 0, w, h);
+          break;
+        case 'customColor':
+          ctx.fillStyle = appState.customColor;
+          ctx.fillRect(0, 0, w, h);
+          break;
+        case 'customImage':
+          if (appState.customBgImage) {
+            const img = appState.customBgImage;
+            const sc = Math.max(w / img.width, h / img.height);
+            const dw = img.width * sc;
+            const dh = img.height * sc;
+            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+          } else {
+            ctx.fillStyle = '#14161F';
+            ctx.fillRect(0, 0, w, h);
+          }
+          break;
+        case 'checker': {
+          const tile = 22;
+          ctx.fillStyle = '#1E2029';
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#2B2E3A';
+          for (let y = 0; y < h; y += tile) {
+            for (let x = ((y / tile) % 2) * tile; x < w; x += tile * 2) {
+              ctx.fillRect(x, y, tile, tile);
+            }
+          }
+          break;
+        }
+        case 'darkStudio': {
+          const grad = ctx.createRadialGradient(w * 0.5, h * 0.42, 40, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
+          grad.addColorStop(0, '#272D45');
+          grad.addColorStop(0.55, '#151825');
+          grad.addColorStop(1, '#0B0D14');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Studio ambient rim lights
+          const rimL = ctx.createRadialGradient(w * 0.14, h * 0.28, 10, w * 0.14, h * 0.28, w * 0.4);
+          rimL.addColorStop(0, 'rgba(244, 151, 182, 0.15)');
+          rimL.addColorStop(1, 'rgba(244, 151, 182, 0)');
+          ctx.fillStyle = rimL;
+          ctx.fillRect(0, 0, w, h);
+
+          const rimR = ctx.createRadialGradient(w * 0.86, h * 0.24, 10, w * 0.86, h * 0.24, w * 0.36);
+          rimR.addColorStop(0, 'rgba(255, 217, 61, 0.11)');
+          rimR.addColorStop(1, 'rgba(255, 217, 61, 0)');
+          ctx.fillStyle = rimR;
+          ctx.fillRect(0, 0, w, h);
+          break;
+        }
+        case 'gamingRoom':
+          drawGamingRoomBackground(ctx, w, h, time);
+          break;
+        case 'takanekoYellow':
+        default: {
+          // Official TAKANEKO Warm Yellow Gradient + Pixel/Playful Logo & Paw Pattern
+          const grad = ctx.createRadialGradient(w * 0.52, h * 0.42, 30, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
+          grad.addColorStop(0, '#FFF3A1');
+          grad.addColorStop(0.45, '#FFD94A');
+          grad.addColorStop(1, '#F5A61C');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Decorative Official "TAKANEKO" Watermark Typography
+          ctx.save();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+          ctx.font = `900 ${Math.min(w * 0.12, 130)}px 'M PLUS Rounded 1c', sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('TAKANEKO', w * 0.5, h * 0.19);
+
+          // Soft floating paw prints
+          const spots = [
+            { x: 0.14, y: 0.26, s: 28, r: -0.25 },
+            { x: 0.86, y: 0.22, s: 34, r: 0.22 },
+            { x: 0.11, y: 0.74, s: 36, r: 0.16 },
+            { x: 0.88, y: 0.76, s: 30, r: -0.20 },
+            { x: 0.76, y: 0.47, s: 22, r: 0.30 },
+            { x: 0.24, y: 0.52, s: 20, r: -0.32 },
+          ];
+          for (const p of spots) {
+            const floatY = Math.sin(time * 0.9 + p.x * 9) * 6;
+            drawPawPrint(ctx, w * p.x, h * p.y + floatY, p.s, p.r, 'rgba(255, 255, 255, 0.20)');
+          }
+          ctx.restore();
+          break;
+        }
+      }
+    }
+
+    function drawGamingRoomBackground(ctx, w, h, time) {
+      const wallGrad = ctx.createLinearGradient(0, 0, 0, h);
+      wallGrad.addColorStop(0, '#2B2B38');
+      wallGrad.addColorStop(0.65, '#1D1D28');
+      wallGrad.addColorStop(1, '#12121A');
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle vertical acoustic wall slats
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 2;
+      const step = Math.max(64, w / 16);
+      for (let x = 0; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      // Warm cozy ambient glow behind character
+      const glow = ctx.createRadialGradient(w * 0.5, h * 0.45, 20, w * 0.5, h * 0.45, Math.min(w, h) * 0.62);
+      glow.addColorStop(0, 'rgba(255, 208, 128, 0.14)');
+      glow.addColorStop(0.6, 'rgba(244, 151, 182, 0.06)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Left wooden shelf with potted plant & cute cat plushie
+      const shelfW = Math.min(230, w * 0.22);
+      const shelfX = Math.max(24, w * 0.045);
+      const shelfY = h * 0.49;
+
+      ctx.save();
+      // Plant leaves
+      ctx.fillStyle = '#2E5634';
+      ctx.beginPath();
+      ctx.ellipse(shelfX + shelfW * 0.28, shelfY - 58, 20, 44, -0.35, 0, Math.PI * 2);
+      ctx.ellipse(shelfX + shelfW * 0.40, shelfY - 68, 19, 50, 0.1, 0, Math.PI * 2);
+      ctx.ellipse(shelfX + shelfW * 0.50, shelfY - 50, 17, 38, 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#735037';
+      ctx.beginPath();
+      ctx.roundRect(shelfX + shelfW * 0.22, shelfY - 30, 52, 30, 6);
+      ctx.fill();
+
+      // Cute mini grey cat plush on shelf
+      ctx.fillStyle = '#9CA3AF';
+      ctx.strokeStyle = '#1F2028';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(shelfX + shelfW * 0.74, shelfY - 22, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Wooden shelf plank
+      ctx.fillStyle = '#4E3827';
+      ctx.strokeStyle = '#1B140E';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(shelfX, shelfY, shelfW, 14, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Silver Play Button Plaque
+      const px = w * 0.23;
+      const py = h * 0.17;
+      ctx.fillStyle = '#333646';
+      ctx.strokeStyle = '#535870';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(px, py, 82, 56, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#626985';
+      ctx.beginPath();
+      ctx.moveTo(px + 34, py + 17);
+      ctx.lineTo(px + 54, py + 28);
+      ctx.lineTo(px + 34, py + 39);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right soft neon accent light
+      const neonA = 0.26 + Math.sin(time * 1.6) * 0.08;
+      ctx.strokeStyle = `rgba(244, 151, 182, ${neonA})`;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.88, h * 0.14);
+      ctx.lineTo(w * 0.88, h * 0.74);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 5. TAKANEKO FULL-BODY 2D BONE RIG RENDERER
+    // =========================================================================
+    function renderCharacter(ctx, time) {
+      const isDesk = appState.sceneMode === 'desk';
+
+      const hYaw = clamp(rig.headYaw / 30, -1.25, 1.25);
+      const hPitch = clamp(rig.headPitch / 30, -1.2, 1.25);
+      const hRoll = (rig.headRoll * Math.PI) / 180;
+
+      const tYaw = clamp(rig.torsoYaw / 25, -1.15, 1.15);
+      const tRoll = (rig.torsoRoll * Math.PI) / 180;
+      const breath = rig.breath;
+      const squat = clamp(rig.squatAmount, 0, 1);
+
+      // Motion overlays
+      let jumpY = springs.jumpY.value;
+      let shakeX = 0;
+      let tiltExtra = 0;
+      if (appState.motion.type) {
+        const p = clamp(appState.motion.time / appState.motion.duration, 0, 1);
+        if (appState.motion.type === 'tilt') {
+          tiltExtra = Math.sin(p * Math.PI) * 0.28;
+        } else if (appState.motion.type === 'shock') {
+          shakeX = Math.sin(p * Math.PI * 12) * (1 - p) * 14;
+        }
+      }
+
+      // Responsive Base Scale so full body (including legs + shadow + leaf) fits cleanly
+      const baseScale = Math.min(stageW, stageH) / (isDesk ? 660 : 750);
+      const depthScale = isDesk ? lerp(1.0, rig.bodyScale, 0.35) : rig.bodyScale;
+      const scale = baseScale * appState.stageScale * depthScale * (isDesk ? 1.10 : 1.0);
+
+      // Root character screen center
+      const moveScaleX = stageW * 0.24 * appState.moveRange;
+      const moveScaleY = stageH * 0.16 * appState.moveRange;
+      const rootX = stageW * 0.5 + appState.stageX + rig.bodyX * moveScaleX + shakeX;
+      const rootY =
+        stageH * (isDesk ? 0.58 : 0.53) +
+        appState.stageY +
+        rig.bodyY * moveScaleY +
+        (squat * 42 + jumpY) * scale;
+
+      ctx.save();
+      ctx.translate(rootX, rootY);
+      ctx.scale(scale, scale);
+
+      // ---------- LAYER 0: GROUND CONTACT SHADOW (Full Body) OR GAMING CHAIR (Desk) ----------
+      if (!isDesk) {
+        // Soft ground shadow anchored below feet (shrinks when jumping!)
+        const groundY = 278 - squat * 42 - jumpY;
+        const jumpHeight = Math.max(0, -jumpY);
+        const shadowScale = clamp(1 - jumpHeight / 260, 0.45, 1.15);
+        const shadowAlpha = clamp(0.24 - jumpHeight / 600, 0.08, 0.28);
+        ctx.save();
+        ctx.translate(rig.hipShiftX * 0.5, groundY);
+        const sGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 118 * shadowScale);
+        sGrad.addColorStop(0, `rgba(15, 15, 22, ${shadowAlpha})`);
+        sGrad.addColorStop(0.7, `rgba(15, 15, 22, ${shadowAlpha * 0.45})`);
+        sGrad.addColorStop(1, 'rgba(15, 15, 22, 0)');
+        ctx.fillStyle = sGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 118 * shadowScale, 24 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        drawGamingChair(ctx, tYaw, breath);
+      }
+
+      // ---------- LAYER 1: STRIPED CAT TAIL (Multi-Joint Bezier Physics, Behind Torso) ----------
+      if (!isDesk) {
+        drawStripedTail(ctx, time, tYaw, rig.hipShiftX);
+      }
+
+      // ---------- LAYER 2: 2-BONE ARTICULATED WHITE CAT LEGS (Full Body Mode) ----------
+      if (!isDesk) {
+        drawArticulatedLegs(ctx, tYaw, breath, squat);
+      }
+
+      // Apply Torso Pivot (Hips at y=145 -> leaning pivots naturally from waist!)
+      ctx.save();
+      ctx.translate(rig.hipShiftX, 145);
+      ctx.rotate(tRoll + tiltExtra * 0.22);
+      ctx.translate(-rig.hipShiftX, -145);
+
+      // ---------- LAYER 3: BACK HOOD WITH LIGHT PINK INNER LINING ----------
+      drawBackHood(ctx, hYaw, hPitch, tYaw, breath);
+
+      // ---------- LAYER 4: BACK-LAYER ARMS (if an arm is raised very high behind head/shoulders) ----------
+      // Draw arms that are pointing downward/outward naturally alongside hoodie
+      // Left arm (-1) & Right arm (+1) shoulder anchors
+      const shLX = -82 + tYaw * 12;
+      const shLY = 16 - breath * 2.5;
+      const shRX = 82 + tYaw * 12;
+      const shRY = 16 - breath * 2.5;
+
+      // ---------- LAYER 5: OVERSIZED BLACK HOODIE TORSO + MULTI-NODE DRAWSTRINGS ----------
+      drawHoodieTorso(ctx, hYaw, hPitch, tYaw, breath);
+
+      // ---------- LAYER 6: 2-BONE ARTICULATED ARMS (Black Sleeves + White Cat Paws + Pink Paw Pads) ----------
+      drawArticulatedArm(ctx, -1, shLX, shLY, rig.armLUpper, rig.armLFore, rig.armLStretch, rig.armLPalmShow);
+      drawArticulatedArm(ctx, 1, shRX, shRY, rig.armRUpper, rig.armRFore, rig.armRStretch, rig.armRPalmShow);
+
+      // ---------- LAYER 7: NECK OVER-EAR HEADPHONES (Black x Pink Ring + Paw Mark) ----------
+      drawNeckHeadphones(ctx, hYaw, hPitch, hRoll, tYaw, breath);
+
+      // ---------- LAYER 8: HEAD RIG (2.5D Parallax, Top Tabby Stripes, Spring Ears & 2 White Leaves) ----------
+      ctx.save();
+      const headPivotX = hYaw * 9 + tYaw * 6;
+      const headPivotY = -36 + hPitch * 6 - breath * 3.0;
+      ctx.translate(headPivotX, headPivotY);
+      ctx.rotate(hRoll + tiltExtra);
+
+      // 8a. Left & Right Cat Ears + 2-Leaf White Accessory on Viewer's Top-Right
+      drawCatEarsAndLeaf(ctx, hYaw, hPitch, time);
+
+      // 8b. Rounded White Cat Head Base + Top Tabby Stripes (visible on pitch down!)
+      drawCatHeadBase(ctx, hYaw, hPitch);
+
+      // 8c. Whiskers
+      drawWhiskers(ctx, hYaw, hPitch);
+
+      // 8d. Face Features (Blush, 6 Expressions Eyes/Brows/Mouth, FX)
+      drawFaceFeatures(ctx, hYaw, hPitch, time);
+
+      ctx.restore(); // End Head Rig
+      ctx.restore(); // End Torso Pivot
+
+      // ---------- LAYER 9: GAMING DESK FOREGROUND (Desk Mode) ----------
+      if (isDesk) {
+        drawGamingDeskForeground(ctx, time, hYaw, breath);
+      }
+
+      ctx.restore(); // End Root Transform
+    }
+
+    // --- LAYER 0: Gaming Chair ---
+    function drawGamingChair(ctx, tYaw, breath) {
+      ctx.save();
+      ctx.translate(-tYaw * 8, -16 - breath * 1.5);
+      ctx.fillStyle = '#1D1F26';
+      ctx.strokeStyle = '#111216';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-135, 195);
+      ctx.quadraticCurveTo(-155, 20, -120, -135);
+      ctx.quadraticCurveTo(-95, -215, 0, -218);
+      ctx.quadraticCurveTo(95, -215, 120, -135);
+      ctx.quadraticCurveTo(155, 20, 135, 195);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#2B2E38';
+      ctx.beginPath();
+      ctx.roundRect(-94, -178, 188, 320, 48);
+      ctx.fill();
+
+      ctx.fillStyle = '#22242C';
+      ctx.strokeStyle = '#14151A';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-72, -166, 144, 54, 24);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- LAYER 1: Multi-Joint Physics Striped Cat Tail ---
+    function drawStripedTail(ctx, time, tYaw, hipShiftX) {
+      ctx.save();
+      const s1 = springs.tail1.value * 30 + Math.sin(time * 2.1) * 14;
+      const s2 = springs.tail2.value * 44 + Math.sin(time * 2.1 - 0.7) * 20;
+      const s3 = springs.tail3.value * 56 + Math.sin(time * 2.1 - 1.35) * 26;
+
+      const p0 = { x: 38 + hipShiftX - tYaw * 14, y: 170 };
+      const p1 = { x: 112 + hipShiftX + s1 * 0.45, y: 202 + s1 * 0.15 };
+      const p2 = { x: 172 + hipShiftX + s2 * 0.72, y: 142 + s2 * 0.22 };
+      const p3 = { x: 202 + hipShiftX + s3 * 0.85, y: 66 + s3 * 0.25 };
+
+      const sampleTail = (t) => {
+        const mt = 1 - t;
+        const x = mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x;
+        const y = mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y;
+        const dx = 3 * mt * mt * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t * t * (p3.x - p2.x);
+        const dy = 3 * mt * mt * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t * t * (p3.y - p2.y);
+        const len = Math.hypot(dx, dy) || 1;
+        return { x, y, nx: -dy / len, ny: dx / len };
+      };
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // Dark outline
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 36;
+      ctx.stroke();
+
+      // White inner body
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 25.5;
+      ctx.stroke();
+
+      // Multiple Black Stripes near tail tip (faithful to character sheet!)
+      const stripeTs = [0.58, 0.71, 0.83, 0.93];
+      ctx.strokeStyle = '#232328';
+      ctx.lineCap = 'butt';
+      for (let i = 0; i < stripeTs.length; i++) {
+        const s = sampleTail(stripeTs[i]);
+        ctx.beginPath();
+        ctx.moveTo(s.x - s.nx * 13, s.y - s.ny * 13);
+        ctx.lineTo(s.x + s.nx * 13, s.y + s.ny * 13);
+        ctx.lineWidth = i === 3 ? 11 : 9.5;
+        ctx.stroke();
+      }
+
+      // Black rounded tip cap
+      const tip = sampleTail(0.99);
+      ctx.fillStyle = '#232328';
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // --- LAYER 2: 2-Bone Articulated White Cat Legs (Seamless Joint Interpolation) ---
+    function drawArticulatedLegs(ctx, tYaw, breath, squat) {
+      const drawSingleLeg = (side, thighAng, shinAng, lift) => {
+        const hipX = side * 44 + rig.hipShiftX * 0.85 - tYaw * 6;
+        const hipY = 172 - lift * 22;
+
+        const thighLen = 46 - squat * 8;
+        const shinLen = 46 - squat * 6;
+
+        const kneeX = hipX + Math.cos(thighAng) * thighLen;
+        const kneeY = hipY + Math.sin(thighAng) * thighLen;
+        const ankleX = kneeX + Math.cos(shinAng) * shinLen;
+        const ankleY = kneeY + Math.sin(shinAng) * shinLen;
+
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // 1. Crisp Outer Outline Stroke along the 2-bone leg spline (prevents any joint gap!)
+        ctx.beginPath();
+        ctx.moveTo(hipX, hipY);
+        ctx.quadraticCurveTo(kneeX, kneeY, ankleX, ankleY);
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 52;
+        ctx.stroke();
+
+        // Rounded cute paw foot outline
+        ctx.fillStyle = OUTLINE;
+        ctx.beginPath();
+        ctx.ellipse(ankleX + side * 4, ankleY + 5, 28, 22, (shinAng - Math.PI / 2) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Clean White Inner Leg Fill
+        ctx.beginPath();
+        ctx.moveTo(hipX, hipY);
+        ctx.quadraticCurveTo(kneeX, kneeY, ankleX, ankleY);
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 41;
+        ctx.stroke();
+
+        // Rounded cute paw foot white fill
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.ellipse(ankleX + side * 4, ankleY + 5, 22.5, 16.5, (shinAng - Math.PI / 2) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Subtle shadow right under hoodie hem
+        ctx.strokeStyle = 'rgba(180, 175, 190, 0.45)';
+        ctx.lineWidth = 40;
+        ctx.beginPath();
+        ctx.moveTo(hipX, hipY);
+        ctx.lineTo(lerp(hipX, kneeX, 0.36), lerp(hipY, kneeY, 0.36));
+        ctx.stroke();
+
+        // Cute cat toe divider lines at foot tip
+        const footAngle = (shinAng - Math.PI / 2) * 0.5;
+        ctx.save();
+        ctx.translate(ankleX + side * 4, ankleY + 11);
+        ctx.rotate(footAngle);
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-6, -2);
+        ctx.lineTo(-6, 8);
+        ctx.moveTo(6, -2);
+        ctx.lineTo(6, 8);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.restore();
+      };
+
+      drawSingleLeg(-1, rig.legLThigh, rig.legLShin, rig.legLLift);
+      drawSingleLeg(1, rig.legRThigh, rig.legRShin, rig.legRLift);
+    }
+
+    // --- LAYER 3: Back Hood with Soft Pink Inner Lining ---
+    function drawBackHood(ctx, hYaw, hPitch, tYaw, breath) {
+      ctx.save();
+      ctx.translate(-hYaw * 7 - tYaw * 5, -24 - hPitch * 4 - breath * 2.5);
+
+      ctx.fillStyle = HOODIE_DARK;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-104, 16);
+      ctx.bezierCurveTo(-116, -25, -76, -42, 0, -40);
+      ctx.bezierCurveTo(76, -42, 116, -25, 104, 16);
+      ctx.quadraticCurveTo(0, 32, -104, 16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Pastel pink hood inner lining
+      ctx.fillStyle = PINK_LIGHT;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(-84, 12);
+      ctx.bezierCurveTo(-88, -14, -55, -24, 0, -23);
+      ctx.bezierCurveTo(55, -24, 88, -14, 84, 12);
+      ctx.quadraticCurveTo(0, 20, -84, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // --- LAYER 5: Oversized Black Hoodie Torso + Multi-Node Physics Drawstrings ---
+    function drawHoodieTorso(ctx, hYaw, hPitch, tYaw, breath) {
+      ctx.save();
+      const bScaleX = 1 + breath * 0.015;
+      const bScaleY = 1 + breath * 0.018;
+      ctx.scale(bScaleX, bScaleY);
+
+      const torsoGrad = ctx.createLinearGradient(0, -10, 0, 195);
+      torsoGrad.addColorStop(0, HOODIE_MID);
+      torsoGrad.addColorStop(0.65, HOODIE_DARK);
+      torsoGrad.addColorStop(1, '#1D1E23');
+
+      ctx.fillStyle = torsoGrad;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
+
+      // Slight 2.5D width shift based on torsoYaw
+      const leftEdge = -88 + tYaw * 4;
+      const rightEdge = 88 + tYaw * 4;
+
+      ctx.beginPath();
+      ctx.moveTo(leftEdge, 6);
+      ctx.bezierCurveTo(-106, 58, -113, 128, -106, 178);
+      ctx.quadraticCurveTo(0, 198, 106, 178);
+      ctx.bezierCurveTo(113, 128, 106, 58, rightEdge, 6);
+      ctx.quadraticCurveTo(0, -14, leftEdge, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bottom Ribbed Hem
+      ctx.fillStyle = HOODIE_DEEP;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-105, 166);
+      ctx.quadraticCurveTo(0, 185, 105, 166);
+      ctx.lineTo(103, 184);
+      ctx.quadraticCurveTo(0, 202, -103, 184);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Front Kangaroo Pocket (2.5D parallax shift)
+      const px = tYaw * 16 + hYaw * 4;
+      ctx.fillStyle = '#1E1F25';
+      ctx.strokeStyle = '#131418';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(px - 58, 108);
+      ctx.lineTo(px + 58, 108);
+      ctx.lineTo(px + 72, 162);
+      ctx.quadraticCurveTo(px, 174, px - 72, 162);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Pocket opening highlights
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(px - 53, 114);
+      ctx.lineTo(px - 66, 157);
+      ctx.moveTo(px + 53, 114);
+      ctx.lineTo(px + 66, 157);
+      ctx.stroke();
+
+      // Chest Pink Paw Print Logo (Viewer's right chest)
+      const pawX = 50 + tYaw * 18 + hYaw * 3;
+      const pawScaleX = clamp(1 - tYaw * 0.16, 0.72, 1.12);
+      ctx.save();
+      ctx.translate(pawX, 72 + hPitch * 2);
+      ctx.scale(pawScaleX, 1);
+      drawPawPrint(ctx, 0, 0, 23, 0.08, PINK_MAIN, OUTLINE, 2.2);
+      ctx.restore();
+
+      // Subtle hoodie cloth highlights
+      ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+      ctx.lineWidth = 4.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-72 + tYaw * 6, 48);
+      ctx.quadraticCurveTo(-80 + tYaw * 6, 100, -76 + tYaw * 6, 150);
+      ctx.moveTo(76 + tYaw * 6, 46);
+      ctx.quadraticCurveTo(84 + tYaw * 6, 98, 82 + tYaw * 6, 148);
+      ctx.stroke();
+
+      // --- 2-Segment Multi-Joint Physics Pink Hoodie Drawstrings ---
+      const drawMultiSegmentString = (ax, ay, a1, a2, segLen) => {
+        const mx = ax + Math.sin(a1) * segLen;
+        const my = ay + Math.cos(a1) * segLen;
+        const ex = mx + Math.sin(a2) * segLen;
+        const ey = my + Math.cos(a2) * segLen;
+
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.quadraticCurveTo(mx, my, ex, ey);
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 10.5;
+        ctx.stroke();
+
+        ctx.strokeStyle = PINK_MAIN;
+        ctx.lineWidth = 5.4;
+        ctx.stroke();
+
+        // Cute pink rounded tip bead
+        ctx.fillStyle = PINK_MAIN;
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ex, ey + 2, 5.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      };
+
+      const strBaseX = tYaw * 16 + hYaw * 4;
+      drawMultiSegmentString(-22 + strBaseX, 16, springs.strL1.value, springs.strL2.value, 35);
+      drawMultiSegmentString(22 + strBaseX, 16, springs.strR1.value, springs.strR2.value, 35);
+
+      ctx.restore();
+    }
+
+    // --- LAYER 6: 2-Bone Articulated Oversized Hoodie Arm + White Cat Paw (Seamless Joint!) ---
+    function drawArticulatedArm(ctx, side, shX, shY, upperAng, foreAng, stretch, palmShow) {
+      const upperLen = 54 * clamp(stretch, 0.72, 1.24);
+      const foreLen = 56 * clamp(stretch, 0.72, 1.24);
+
+      const elbowX = shX + Math.cos(upperAng) * upperLen;
+      const elbowY = shY + Math.sin(upperAng) * upperLen;
+      const wristX = elbowX + Math.cos(foreAng) * foreLen;
+      const wristY = elbowY + Math.sin(foreAng) * foreLen;
+      const handX = wristX + Math.cos(foreAng) * 18;
+      const handY = wristY + Math.sin(foreAng) * 18;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // 1. White Rounded Cat Paw peeking out of sleeve
+      ctx.save();
+      ctx.translate(handX, handY);
+      ctx.rotate(foreAng - Math.PI / 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 5.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 22, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Show adorable pink paw pad on palm when waving, raising hands, or turning palm forward!
+      if (palmShow > 0.08) {
+        ctx.globalAlpha = clamp(palmShow, 0, 1);
+        drawPawPrint(ctx, 0, 2, 17, 0, PINK_MAIN);
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+
+      // 2. Seamless Oversized Black Sleeve (Outer outline -> Hoodie dark fill -> Soft cloth highlight)
+      // Using quadratic curve through elbow guarantees zero breaks at any angle (even full banzai or tight elbow bend!)
+      ctx.beginPath();
+      ctx.moveTo(shX, shY);
+      ctx.quadraticCurveTo(elbowX, elbowY, wristX, wristY);
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 58;
+      ctx.stroke();
+
+      // Inner dark sleeve fill
+      ctx.strokeStyle = HOODIE_DARK;
+      ctx.lineWidth = 46;
+      ctx.stroke();
+
+      // Smooth shoulder cap merge so shoulder blends softly with hoodie torso
+      ctx.fillStyle = HOODIE_DARK;
+      ctx.beginPath();
+      ctx.arc(shX, shY, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle glossy cloth highlight along outer upper sleeve
+      ctx.beginPath();
+      ctx.moveTo(shX, shY);
+      ctx.quadraticCurveTo(elbowX, elbowY, wristX, wristY);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.065)';
+      ctx.lineWidth = 14;
+      ctx.stroke();
+
+      // 3. Ribbed Sleeve Cuff Band around Wrist
+      ctx.save();
+      ctx.translate(wristX, wristY);
+      ctx.rotate(foreAng - Math.PI / 2);
+      ctx.fillStyle = HOODIE_DEEP;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.roundRect(-24, -10, 48, 17, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    // --- LAYER 7: Chunky Black x Pink Over-Ear Neck Headphones ---
+    function drawNeckHeadphones(ctx, hYaw, hPitch, hRoll, tYaw, breath) {
+      ctx.save();
+      const hpX = hYaw * 7 + tYaw * 8;
+      const hpY = 2 + hPitch * 4 + springs.hpY.value * 14 - breath * 2.2;
+      const hpRot = springs.hpRot.value * 0.22 + hRoll * 0.14;
+
+      ctx.translate(hpX, hpY);
+      ctx.rotate(hpRot);
+
+      // Headband wrapping around neck
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 22;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(0, -14, 72, 0.22 * Math.PI, 0.78 * Math.PI);
+      ctx.stroke();
+      ctx.strokeStyle = '#2B2C32';
+      ctx.lineWidth = 13;
+      ctx.stroke();
+
+      const drawCup = (side) => {
+        ctx.save();
+        ctx.translate(side * 66, 6);
+        ctx.rotate(side * -0.44);
+
+        // Soft ear cushion
+        ctx.fillStyle = '#17181C';
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(-side * 12, 0, 18, 34, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Outer metallic black cup
+        const cupGrad = ctx.createLinearGradient(-22, -32, 24, 32);
+        cupGrad.addColorStop(0, '#3F414A');
+        cupGrad.addColorStop(0.5, '#25262B');
+        cupGrad.addColorStop(1, '#16171B');
+        ctx.fillStyle = cupGrad;
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 5.5;
+        ctx.beginPath();
+        ctx.ellipse(side * 4, 0, 27, 37, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Signature Pink Ring
+        ctx.strokeStyle = PINK_MAIN;
+        ctx.lineWidth = 4.5;
+        ctx.beginPath();
+        ctx.ellipse(side * 7, 0, 20, 29, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner plate + Pink Paw Logo
+        ctx.fillStyle = '#202126';
+        ctx.beginPath();
+        ctx.ellipse(side * 7, 0, 16, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(side * 8, 1);
+        ctx.scale(0.82, 1.0);
+        drawPawPrint(ctx, 0, 0, 17, side * 0.12, PINK_MAIN);
+        ctx.restore();
+
+        // Glossy specular highlight
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(side * 5, -6, 18, -Math.PI * 0.72, -Math.PI * 0.3);
+        ctx.stroke();
+
+        ctx.restore();
+      };
+
+      drawCup(-1);
+      drawCup(1);
+      ctx.restore();
+    }
+
+    // --- LAYER 8a: Cat Ears + 2-Leaf White Accessory (Large Up-Right + Small Sideways) ---
+    function drawCatEarsAndLeaf(ctx, hYaw, hPitch, time) {
+      const earShiftX = -hYaw * 9;
+      const earShiftY = -hPitch * 7;
+
+      const drawEar = (side) => {
+        ctx.save();
+        const foreshorten = clamp(1 - side * hYaw * 0.16, 0.75, 1.18);
+        const eSpring = side === -1 ? springs.earL.value : springs.earR.value;
+        const twitch = appState.earTwitchSide === side ? appState.earTwitchVal : 0;
+
+        ctx.translate(side * 86 + earShiftX, -168 + earShiftY);
+        ctx.rotate(side * 0.08 + eSpring * 0.25 + twitch * side * 0.22);
+        ctx.scale(foreshorten, 1);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 6;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-side * 42, 14);
+        ctx.quadraticCurveTo(-side * 16, -42, side * 12, -56);
+        ctx.quadraticCurveTo(side * 24, -62, side * 26, -46);
+        ctx.quadraticCurveTo(side * 34, 4, side * 24, 54);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Pale pink inner ear shading
+        ctx.fillStyle = '#F5E1E7';
+        ctx.beginPath();
+        ctx.moveTo(-side * 22, 14);
+        ctx.quadraticCurveTo(-side * 6, -24, side * 11, -35);
+        ctx.quadraticCurveTo(side * 16, -2, side * 12, 34);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+
+      drawEar(-1);
+      drawEar(1);
+
+      // Two White Leaves Accessory on Viewer's Top-Right (Character's Left Ear Base)
+      ctx.save();
+      ctx.translate(103 + earShiftX - hYaw * 4, -176 + earShiftY);
+      const swMain = springs.leafMain.value * 0.44 + Math.sin(time * 2.3) * 0.03;
+      const swSub = springs.leafSub.value * 0.56;
+
+      const drawLeaf = (rot, len, wid) => {
+        ctx.save();
+        ctx.rotate(rot);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 5.2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(len * 0.25, -wid, len * 0.78, -wid * 0.75, len, 0);
+        ctx.bezierCurveTo(len * 0.78, wid * 0.75, len * 0.25, wid, 0, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Soft shaded half
+        ctx.fillStyle = 'rgba(218, 212, 222, 0.36)';
+        ctx.beginPath();
+        ctx.moveTo(6, 0);
+        ctx.bezierCurveTo(len * 0.35, wid * 0.65, len * 0.75, wid * 0.55, len - 4, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Leaf center vein
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.quadraticCurveTo(len * 0.45, -2, len * 0.74, 0);
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      // Larger diagonal-upward leaf + smaller sideways leaf
+      drawLeaf(-1.14 + swMain, 72, 26);
+      drawLeaf(-0.34 + swSub, 56, 20);
+      ctx.restore();
+    }
+
+    // --- LAYER 8b: White Cat Head + Subtle Back-Crown Tabby Stripes (visible on Pitch Down!) ---
+    function drawCatHeadBase(ctx, hYaw, hPitch) {
+      ctx.save();
+      const leftCheek = 136 + (hYaw < 0 ? -hYaw * 10 : -hYaw * 4);
+      const rightCheek = 136 + (hYaw > 0 ? hYaw * 10 : hYaw * 4);
+      const chinY = 12 + hPitch * 7;
+      const topY = -194 + hPitch * 4;
+
+      const headPath = new Path2D();
+      headPath.moveTo(0, topY);
+      headPath.bezierCurveTo(96, topY + 2, rightCheek, -130, rightCheek, -66);
+      headPath.bezierCurveTo(rightCheek, -8, 76, chinY, 0, chinY);
+      headPath.bezierCurveTo(-76, chinY, -leftCheek, -8, -leftCheek, -66);
+      headPath.bezierCurveTo(-leftCheek, -130, -96, topY + 2, 0, topY);
+      headPath.closePath();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill(headPath);
+
+      // Clipped Inner Details: Soft 3D Cel Shading + Top-of-Head Tabby Stripes!
+      ctx.save();
+      ctx.clip(headPath);
+
+      // Subtle Top-Crown Tabby Stripes (Reference sheet back-head detail: peeks smoothly when nodding down!)
+      const stripeVis = clamp((hPitch + 0.18) * 0.95, 0, 1);
+      if (stripeVis > 0.02) {
+        ctx.save();
+        ctx.globalAlpha = stripeVis * 0.65;
+        ctx.fillStyle = '#383A42';
+        const sy = topY - 12 + hPitch * 26;
+        const sxShift = hYaw * 18;
+        const stripeOffsets = [-34, -12, 12, 34];
+        const stripeLens = [26, 36, 36, 26];
+        for (let i = 0; i < stripeOffsets.length; i++) {
+          ctx.beginPath();
+          ctx.roundRect(stripeOffsets[i] + sxShift - 4.5, sy, 9, stripeLens[i], 4.5);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Soft lower chin shading
+      const chinGrad = ctx.createRadialGradient(-18 + hYaw * 12, -110 + hPitch * 10, 40, 0, -68, 165);
+      chinGrad.addColorStop(0, 'rgba(255,255,255,0)');
+      chinGrad.addColorStop(0.76, 'rgba(235,230,238,0.08)');
+      chinGrad.addColorStop(1, 'rgba(202,194,208,0.42)');
+      ctx.fillStyle = chinGrad;
+      ctx.fillRect(-165, -215, 330, 260);
+      ctx.restore();
+
+      // Head outer contour
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 6;
+      ctx.lineJoin = 'round';
+      ctx.stroke(headPath);
+      ctx.restore();
+    }
+
+    // --- LAYER 8c: Cat Whiskers ---
+    function drawWhiskers(ctx, hYaw, hPitch) {
+      ctx.save();
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 4.2;
+      ctx.lineCap = 'round';
+
+      const drawSide = (side) => {
+        const sc = clamp(1 + side * hYaw * 0.22, 0.72, 1.24);
+        const sx = hYaw * 14;
+        const sy = hPitch * 10;
+
+        ctx.beginPath();
+        ctx.moveTo(side * 106 + sx, -66 + sy);
+        ctx.quadraticCurveTo(side * 132 * sc + sx, -71 + sy, side * 156 * sc + sx, -67 + sy);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(side * 104 + sx, -44 + sy);
+        ctx.quadraticCurveTo(side * 128 * sc + sx, -40 + sy, side * 150 * sc + sx, -32 + sy);
+        ctx.stroke();
+      };
+      drawSide(-1);
+      drawSide(1);
+      ctx.restore();
+    }
+
+    // --- LAYER 8d: Face Features (6 Official Expressions + Real-Time Eye/Mouth Rig) ---
+    function drawFaceFeatures(ctx, hYaw, hPitch, time) {
+      ctx.save();
+      const fx = hYaw * 28;
+      const fy = hPitch * 20;
+      ctx.translate(fx, fy);
+
+      const expr = appState.expression;
+      const mouthOpen = clamp(rig.mouthOpen, 0, 1);
+      const eyeL = clamp(rig.eyeLOpen, 0, 1);
+      const eyeR = clamp(rig.eyeROpen, 0, 1);
+      const gx = clamp(rig.gazeX, -1, 1);
+      const gy = clamp(rig.gazeY, -1, 1);
+      const browY = clamp(rig.browY, -1, 1);
+
+      // 1. Pink Cheeks
+      const blushA =
+        expr === 'blush' ? 0.68 :
+        expr === 'happy' ? 0.52 :
+        expr === 'sparkle' ? 0.42 :
+        expr === 'calm' ? 0.30 :
+        expr === 'surprised' ? 0.16 : 0.22;
+
+      const drawBlush = (cx, cy) => {
+        const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 24);
+        g.addColorStop(0, `rgba(255, 138, 168, ${blushA})`);
+        g.addColorStop(1, 'rgba(255, 138, 168, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 24, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (expr === 'blush') {
+          ctx.strokeStyle = 'rgba(240, 100, 135, 0.55)';
+          ctx.lineWidth = 2.4;
+          ctx.lineCap = 'round';
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i * 7 - 2, cy + 4);
+            ctx.lineTo(cx + i * 7 + 3, cy - 4);
+            ctx.stroke();
+          }
+        }
+      };
+      drawBlush(-68, -52);
+      drawBlush(68, -52);
+
+      // 2. Eyes
+      const drawEye = (side, openVal) => {
+        ctx.save();
+        ctx.translate(side * 46, -88);
+        ctx.scale(clamp(1 - side * hYaw * 0.11, 0.84, 1.12), 1);
+
+        if (expr === 'happy') {
+          ctx.strokeStyle = OUTLINE;
+          ctx.lineWidth = 6.2;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          if (side === -1) {
+            ctx.moveTo(-12, -10); ctx.lineTo(10, 0); ctx.lineTo(-12, 10);
+          } else {
+            ctx.moveTo(12, -10); ctx.lineTo(-10, 0); ctx.lineTo(12, 10);
+          }
+          ctx.stroke();
+        } else if (expr === 'calm') {
+          ctx.strokeStyle = OUTLINE;
+          ctx.lineWidth = 5.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.arc(0, -4, 15, 0.18 * Math.PI, 0.82 * Math.PI);
+          ctx.stroke();
+        } else if (expr === 'blush') {
+          ctx.strokeStyle = OUTLINE;
+          ctx.lineWidth = 5.8;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.arc(0, 8, 15, 1.18 * Math.PI, 1.82 * Math.PI);
+          ctx.stroke();
+        } else {
+          if (openVal < 0.14) {
+            ctx.strokeStyle = OUTLINE;
+            ctx.lineWidth = 5.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-13, 1);
+            ctx.quadraticCurveTo(0, -5, 13, 1);
+            ctx.stroke();
+          } else {
+            const ox = gx * 5.5;
+            const oy = gy * 4.5;
+            const rx = expr === 'surprised' ? 11.2 : 12.2;
+            const ry = (expr === 'surprised' ? 13.5 : 13.8) * openVal;
+
+            ctx.fillStyle = '#18181B';
+            ctx.beginPath();
+            ctx.ellipse(ox, oy, rx, ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (expr === 'sparkle' || expr === 'surprised') {
+              const st = (expr === 'sparkle' ? 1.0 : 0.72) * (0.9 + Math.sin(time * 8) * 0.12);
+              drawFourPointStar(ctx, ox, oy, 8.8 * st, '#FFD93D');
+            } else {
+              ctx.fillStyle = 'rgba(255,255,255,0.88)';
+              ctx.beginPath();
+              ctx.ellipse(ox - 3.6, oy - 4.2 * openVal, 3.1, 3.5 * openVal, -0.25, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+        ctx.restore();
+      };
+      drawEye(-1, eyeL);
+      drawEye(1, eyeR);
+
+      // 3. Eyebrows
+      if (expr === 'surprised' || browY > 0.35) {
+        ctx.save();
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 4.2;
+        ctx.lineCap = 'round';
+        const bs = -browY * 6;
+        if (expr === 'surprised') {
+          ctx.beginPath();
+          ctx.moveTo(-58, -114 + bs); ctx.quadraticCurveTo(-46, -118 + bs, -34, -124 + bs);
+          ctx.moveTo(58, -114 + bs); ctx.quadraticCurveTo(46, -118 + bs, 34, -124 + bs);
+          ctx.stroke();
+        } else {
+          ctx.globalAlpha = clamp((browY - 0.35) * 1.5, 0, 0.65);
+          ctx.beginPath();
+          ctx.arc(-46, -112 + bs, 13, 1.2 * Math.PI, 1.8 * Math.PI);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(46, -112 + bs, 13, 1.2 * Math.PI, 1.8 * Math.PI);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 4. Cat Mouth (`ω` + Red-Pink Lip-Sync Interior)
+      ctx.save();
+      const my = -56;
+      const effOpen =
+        expr === 'surprised' ? Math.max(0.55, mouthOpen) :
+        (expr === 'calm' || expr === 'blush') ? Math.max(0, mouthOpen - 0.25) * 1.2 :
+        mouthOpen;
+
+      if (expr === 'surprised') {
+        const mw = 17 + effOpen * 6;
+        const mh = 22 + effOpen * 16;
+        ctx.fillStyle = '#D94343';
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 4.6;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, my - 4);
+        ctx.bezierCurveTo(mw, my - 2, mw * 1.1, my + mh, 0, my + mh);
+        ctx.bezierCurveTo(-mw * 1.1, my + mh, -mw, my - 2, 0, my - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        ctx.fillStyle = '#FF8A9B';
+        ctx.beginPath();
+        ctx.ellipse(0, my + mh, mw * 0.72, mh * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke();
+      } else if (effOpen > 0.08) {
+        const mDepth = 10 + effOpen * 34;
+        const mHalfW = 19 + effOpen * 5;
+        const mp = new Path2D();
+        mp.moveTo(-mHalfW, my - 2);
+        mp.quadraticCurveTo(-mHalfW * 0.48, my + 8, 0, my - 4);
+        mp.quadraticCurveTo(mHalfW * 0.48, my + 8, mHalfW, my - 2);
+        mp.bezierCurveTo(mHalfW * 0.95, my + mDepth, -mHalfW * 0.95, my + mDepth, -mHalfW, my - 2);
+        mp.closePath();
+
+        ctx.fillStyle = '#E54B4B';
+        ctx.fill(mp);
+        ctx.save();
+        ctx.clip(mp);
+        ctx.fillStyle = '#FF8D9E';
+        ctx.beginPath();
+        ctx.ellipse(0, my + mDepth * 0.92, mHalfW * 0.8, mDepth * 0.52, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 4.6;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke(mp);
+
+        ctx.beginPath();
+        ctx.moveTo(-mHalfW - 4, my - 5);
+        ctx.quadraticCurveTo(-mHalfW * 0.5, my + 8, 0, my - 4);
+        ctx.quadraticCurveTo(mHalfW * 0.5, my + 8, mHalfW + 4, my - 5);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 4.8;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-18, my - 2);
+        ctx.quadraticCurveTo(-9, my + 10, 0, my - 1);
+        ctx.quadraticCurveTo(9, my + 10, 18, my - 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 5. Expression Special Effects
+      if (expr === 'sparkle') {
+        for (const sp of sparkles) {
+          const a = sp.angle + time * sp.speed * 0.4;
+          const sx = Math.cos(a) * sp.radius * 0.86 - fx;
+          const sy = Math.sin(a) * sp.radius * 0.65 - 95 - fy;
+          const pulse = 0.5 + 0.5 * Math.sin(time * 5 + sp.phase);
+          drawFourPointStar(ctx, sx, sy, sp.size * (0.65 + pulse * 0.55), '#FFD93D', 0.85 * pulse + 0.15);
+        }
+      } else if (expr === 'surprised') {
+        const dropY = -126 + Math.sin(time * 7) * 3;
+        ctx.save();
+        ctx.translate(92, dropY);
+        ctx.fillStyle = '#7DD3FC';
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.moveTo(0, -14);
+        ctx.bezierCurveTo(10, 0, 11, 12, 0, 14);
+        ctx.bezierCurveTo(-11, 12, -10, 0, 0, -14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.ellipse(-3, 3, 2, 4, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    // --- LAYER 9: Streamer Gaming Desk Foreground ---
+    function drawGamingDeskForeground(ctx, time, hYaw, breath) {
+      ctx.save();
+      const deskY = 128;
+
+      const woodGrad = ctx.createLinearGradient(0, deskY, 0, deskY + 180);
+      woodGrad.addColorStop(0, '#9E6E40');
+      woodGrad.addColorStop(0.25, '#865A32');
+      woodGrad.addColorStop(1, '#5D3C1F');
+      ctx.fillStyle = woodGrad;
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(-430, deskY, 860, 220, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(-424, deskY + 3, 848, 7);
+
+      // Desk mat
+      ctx.fillStyle = '#1E2028';
+      ctx.strokeStyle = '#111217';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-275, deskY + 14, 550, 108, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // RGB Keyboard
+      ctx.save();
+      ctx.fillStyle = '#262832';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.roundRect(-142, deskY + 26, 284, 68, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      const rgbHue = (time * 42) % 360;
+      ctx.strokeStyle = `hsla(${rgbHue}, 85%, 68%, 0.6)`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-132, deskY + 31);
+      ctx.lineTo(132, deskY + 31);
+      ctx.stroke();
+
+      ctx.fillStyle = '#14161D';
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 13; c++) {
+          if (!(r === 3 && c >= 4 && c <= 8)) {
+            ctx.fillRect(-130 + c * 20, deskY + 36 + r * 13, 15, 9);
+          }
+        }
+      }
+      ctx.fillRect(-50, deskY + 75, 100, 9);
+      ctx.restore();
+
+      // Mouse
+      ctx.fillStyle = '#252730';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(-206, deskY + 62, 22, 30, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#EF4444';
+      ctx.beginPath();
+      ctx.roundRect(-210, deskY + 42, 6, 12, 3);
+      ctx.fill();
+
+      // Red & Black Condenser Microphone with Paw Emblem
+      ctx.save();
+      ctx.translate(-168, deskY + 18);
+      ctx.fillStyle = '#1E2027';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 14, 34, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#282B34';
+      ctx.beginPath();
+      ctx.roundRect(-7, -36, 14, 48, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#23252D';
+      ctx.beginPath();
+      ctx.roundRect(-26, -138, 52, 98, 22);
+      ctx.fill();
+      ctx.stroke();
+
+      const micGlow = clamp(0.55 + appState.micVolume * 0.45 + rig.mouthOpen * 0.3, 0.5, 1);
+      ctx.fillStyle = `rgba(239, 68, 68, ${micGlow})`;
+      ctx.beginPath();
+      ctx.roundRect(-20, -131, 40, 46, 16);
+      ctx.fill();
+
+      ctx.strokeStyle = '#18181B';
+      ctx.lineWidth = 2.6;
+      for (let gx = -12; gx <= 12; gx += 8) {
+        ctx.beginPath(); ctx.moveTo(gx, -131); ctx.lineTo(gx, -85); ctx.stroke();
+      }
+      for (let gy = -120; gy <= -94; gy += 10) {
+        ctx.beginPath(); ctx.moveTo(-20, gy); ctx.lineTo(20, gy); ctx.stroke();
+      }
+      ctx.strokeStyle = '#EF4444';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(-25, -84); ctx.lineTo(25, -84); ctx.stroke();
+
+      drawPawPrint(ctx, 0, -61, 15, 0, '#EF4444');
+      ctx.restore();
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 6. DUAL MEDIAPIPE ENGINE (FACE LANDMARKER + POSE LANDMARKER) & MIC
+    // =========================================================================
+    const webcamVideo = document.getElementById('webcamVideo');
+    const pipContainer = document.getElementById('pipContainer');
+    const pipCanvas = document.getElementById('pipCanvas');
+    const pipCtx = pipCanvas.getContext('2d');
+
+    let faceLandmarker = null;
+    let poseLandmarker = null;
+    let webcamStream = null;
+    let lastVideoTime = -1;
+    let trackFrames = 0;
+    let lastTrackFpsT = performance.now();
+
+    // Mic Audio Lip-Sync
+    let audioCtx = null, micStream = null, analyser = null, micData = null;
+
+    function setLoadingProgress(show, text = '', pct = 0) {
+      const bar = document.getElementById('modelLoadingBar');
+      bar.classList.toggle('hidden', !show);
+      if (show) {
+        document.getElementById('modelLoadingText').textContent = text;
+        document.getElementById('modelLoadingPct').textContent = `${pct}%`;
+        document.getElementById('modelLoadingFill').style.width = `${pct}%`;
+      }
+    }
+
+    async function loadMediaPipeModels() {
+      if (faceLandmarker && poseLandmarker) return;
+      setLoadingProgress(true, 'MediaPipe Vision WASM 初期化中...', 18);
+
+      const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+      const { FaceLandmarker, PoseLandmarker, FilesetResolver } = vision;
+
+      const filesetResolver = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+      );
+
+      setLoadingProgress(true, '顔認識モデル (FaceLandmarker) 読込中...', 52);
+      if (!faceLandmarker) {
+        faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          outputFaceBlendshapes: true,
+          outputFacialTransformationMatrixes: true,
+        });
+      }
+
+      setLoadingProgress(true, '全身骨格モデル (PoseLandmarker) 読込中...', 85);
+      if (!poseLandmarker) {
+        poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.45,
+          minPosePresenceConfidence: 0.45,
+          minTrackingConfidence: 0.45,
+        });
+      }
+
+      setLoadingProgress(true, '準備完了！', 100);
+      setTimeout(() => setLoadingProgress(false), 350);
+    }
+
+    async function startCameraTracking() {
+      if (appState.cameraLoading) return;
+      if (appState.cameraActive) {
+        stopCameraTracking();
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('この環境ではWebカメラAPIを利用できません。マウス操作またはオートデモをご利用ください。', 4000);
+        return;
+      }
+
+      appState.cameraLoading = true;
+      updateCameraUIButtons(false, true);
+      setCamBadge('読込中...', 'bg-amber-500/20 text-amber-300');
+
+      try {
+        await loadMediaPipeModels();
+
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+          audio: false,
+        });
+        webcamVideo.srcObject = webcamStream;
+        await webcamVideo.play();
+
+        pipCanvas.width = 320;
+        pipCanvas.height = 240;
+
+        appState.cameraActive = true;
+        appState.cameraLoading = false;
+        if (appState.mode === 'mouse' || appState.mode === 'auto') {
+          setTrackingMode('fullbody', false);
+        }
+        updatePipVisibility();
+        updateCameraUIButtons(true, false);
+        setCamBadge('全身＋顔 稼働中', 'bg-emerald-500/25 text-emerald-300');
+        showToast('📷 全身＋顔リアルタイムトラッキングを開始しました！正面で「キャリブレーション」するとさらに快適です✨');
+
+        setTimeout(() => {
+          if (appState.cameraActive) calibrateNeutralPose(true);
+        }, 1000);
+      } catch (err) {
+        console.error('Camera / MediaPipe error:', err);
+        appState.cameraLoading = false;
+        appState.cameraActive = false;
+        setLoadingProgress(false);
+        updateCameraUIButtons(false, false);
+        setCamBadge('エラー', 'bg-rose-500/25 text-rose-300');
+        showToast('カメラ起動に失敗しました（権限を確認してください）。マウス操作モードでそのまま遊べます。', 4200);
+      }
+    }
+
+    function stopCameraTracking() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach((t) => t.stop());
+        webcamStream = null;
+      }
+      webcamVideo.srcObject = null;
+      appState.cameraActive = false;
+      appState.rawDetect.faceDetected = false;
+      appState.rawDetect.upperDetected = false;
+      appState.rawDetect.lowerDetected = false;
+      updatePipVisibility();
+      updateDetectionBadges();
+      updateCameraUIButtons(false, false);
+      setCamBadge('停止中', 'bg-white/10 text-gray-300');
+      if (appState.mode === 'fullbody' || appState.mode === 'upperbody' || appState.mode === 'faceonly') {
+        setTrackingMode('mouse', false);
+      }
+      showToast('カメラトラッキングを停止しました');
+    }
+
+    function calibrateNeutralPose(silent = false) {
+      appState.calib.headYaw = appState.rawDetect.headYaw;
+      appState.calib.headPitch = appState.rawDetect.headPitch;
+      appState.calib.headRoll = appState.rawDetect.headRoll;
+      appState.calib.bodyX = appState.rawDetect.bodyX;
+      appState.calib.bodyY = appState.rawDetect.bodyY;
+      appState.calib.shoulderW = Math.max(0.12, appState.rawDetect.shoulderW);
+      appState.calib.torsoRoll = appState.rawDetect.torsoRoll;
+      appState.calib.torsoYaw = appState.rawDetect.torsoYaw;
+      if (!silent) showToast('🎯 現在の体と顔の姿勢をニュートラル位置に設定しました！');
+    }
+
+    function extractEulerFromMatrix(m) {
+      const m00 = m[0], m10 = m[1], m20 = m[2];
+      const m11 = m[5], m21 = m[6];
+      const m12 = m[9], m22 = m[10];
+      const sy = Math.sqrt(m00 * m00 + m10 * m10);
+      let pitch, yaw, roll;
+      if (sy > 1e-6) {
+        pitch = Math.atan2(m21, m22);
+        yaw = Math.atan2(-m20, sy);
+        roll = Math.atan2(m10, m00);
+      } else {
+        pitch = Math.atan2(-m12, m11);
+        yaw = Math.atan2(-m20, sy);
+        roll = 0;
+      }
+      const d = 180 / Math.PI;
+      return { yaw: yaw * d, pitch: pitch * d, roll: roll * d };
+    }
+
+    // Skeleton edge pairs for PIP preview overlay
+    const UPPER_EDGES = [
+      [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24],
+    ];
+    const LOWER_EDGES = [
+      [23, 25], [25, 27], [24, 26], [26, 28],
+    ];
+
+    function processCameraFrame() {
+      if (!appState.cameraActive || webcamVideo.readyState < 2) return;
+      if (webcamVideo.currentTime === lastVideoTime) return;
+      lastVideoTime = webcamVideo.currentTime;
+
+      const nowMs = performance.now();
+      let faceRes = null;
+      let poseRes = null;
+
+      try {
+        if (faceLandmarker) {
+          faceRes = faceLandmarker.detectForVideo(webcamVideo, nowMs);
+        }
+        if (poseLandmarker && appState.mode !== 'faceonly') {
+          poseRes = poseLandmarker.detectForVideo(webcamVideo, nowMs);
+        }
+      } catch (e) {
+        return;
+      }
+
+      // Tracking FPS
+      trackFrames++;
+      if (nowMs - lastTrackFpsT >= 600) {
+        const tfps = Math.round((trackFrames * 1000) / (nowMs - lastTrackFpsT));
+        document.getElementById('pipFps').textContent = `${tfps} FPS`;
+        trackFrames = 0;
+        lastTrackFpsT = nowMs;
+      }
+
+      const mirror = appState.mirror;
+      const sign = mirror ? -1 : 1;
+
+      // ---------- 1. FACE TRACKING ----------
+      if (faceRes && faceRes.faceLandmarks && faceRes.faceLandmarks.length > 0) {
+        appState.rawDetect.faceDetected = true;
+        const flm = faceRes.faceLandmarks[0];
+
+        if (faceRes.facialTransformationMatrixes && faceRes.facialTransformationMatrixes.length > 0) {
+          const euler = extractEulerFromMatrix(faceRes.facialTransformationMatrixes[0].data);
+          appState.rawDetect.headYaw = euler.yaw;
+          appState.rawDetect.headPitch = euler.pitch;
+          appState.rawDetect.headRoll = euler.roll;
+
+          const dyaw = (euler.yaw - appState.calib.headYaw) * sign * 1.18;
+          const dpitch = (euler.pitch - appState.calib.headPitch) * 1.25; // look down = positive
+          const droll = (euler.roll - appState.calib.headRoll) * sign * 1.05;
+
+          targetRig.headYaw = clamp(dyaw, -35, 35);
+          targetRig.headPitch = clamp(dpitch, -30, 35);
+          targetRig.headRoll = clamp(droll, -32, 32);
+
+          if (appState.mode === 'faceonly') {
+            const nose = flm[1];
+            targetRig.bodyX = clamp((nose.x - 0.5) * 1.4 * sign, -0.8, 0.8);
+            targetRig.bodyY = clamp((nose.y - 0.5) * 1.0, -0.5, 0.5);
+            targetRig.torsoYaw = clamp(dyaw * 0.35, -18, 18);
+            targetRig.torsoRoll = clamp(droll * 0.25, -14, 14);
+          }
+        }
+
+        if (faceRes.faceBlendshapes && faceRes.faceBlendshapes.length > 0) {
+          const bs = {};
+          for (const c of faceRes.faceBlendshapes[0].categories) bs[c.categoryName] = c.score;
+
+          const bL = mirror ? (bs.eyeBlinkRight || 0) : (bs.eyeBlinkLeft || 0);
+          const bR = mirror ? (bs.eyeBlinkLeft || 0) : (bs.eyeBlinkRight || 0);
+          targetRig.eyeLOpen = clamp(1 - Math.pow(bL * 1.4, 1.35), 0, 1);
+          targetRig.eyeROpen = clamp(1 - Math.pow(bR * 1.4, 1.35), 0, 1);
+
+          const lookR = ((bs.eyeLookOutRight || 0) + (bs.eyeLookInLeft || 0)) * 0.5;
+          const lookL = ((bs.eyeLookOutLeft || 0) + (bs.eyeLookInRight || 0)) * 0.5;
+          const lookU = ((bs.eyeLookUpLeft || 0) + (bs.eyeLookUpRight || 0)) * 0.5;
+          const lookD = ((bs.eyeLookDownLeft || 0) + (bs.eyeLookDownRight || 0)) * 0.5;
+          targetRig.gazeX = clamp((lookR - lookL) * 2.2 * sign, -1, 1);
+          targetRig.gazeY = clamp((lookD - lookU) * 2.0, -1, 1);
+
+          const browUp = ((bs.browInnerUp || 0) + (bs.browOuterUpLeft || 0) + (bs.browOuterUpRight || 0)) / 3;
+          targetRig.browY = clamp(browUp * 1.85, -1, 1);
+
+          const jawOpen = clamp((bs.jawOpen || 0) * 1.8, 0, 1);
+          targetRig.mouthOpen = Math.max(jawOpen, appState.micActive ? appState.micVolume : 0);
+        }
+      } else {
+        appState.rawDetect.faceDetected = false;
+      }
+
+      // ---------- 2. FULL-BODY POSE TRACKING ----------
+      if (poseRes && poseRes.landmarks && poseRes.landmarks.length > 0 && appState.mode !== 'faceonly') {
+        const plm = poseRes.landmarks[0];
+        // Helper to transform normalized camera point into viewer space (respecting mirror!)
+        const pt = (idx) => {
+          const p = plm[idx];
+          return {
+            x: mirror ? 1 - p.x : p.x,
+            y: p.y,
+            z: p.z || 0,
+            vis: p.visibility ?? 0,
+          };
+        };
+
+        // In mirror mode: user's LEFT shoulder (idx 11) appears on viewer's RIGHT side!
+        // Let's map directly to Viewer-Left (character's visual left) and Viewer-Right (character's visual right).
+        const vShL = mirror ? pt(12) : pt(11);
+        const vShR = mirror ? pt(11) : pt(12);
+        const vElL = mirror ? pt(14) : pt(13);
+        const vElR = mirror ? pt(13) : pt(14);
+        const vWrL = mirror ? pt(16) : pt(15);
+        const vWrR = mirror ? pt(15) : pt(16);
+
+        const vHipL = mirror ? pt(24) : pt(23);
+        const vHipR = mirror ? pt(23) : pt(24);
+        const vKnL = mirror ? pt(26) : pt(25);
+        const vKnR = mirror ? pt(25) : pt(26);
+        const vAnL = mirror ? pt(28) : pt(27);
+        const vAnR = mirror ? pt(27) : pt(28);
+
+        const upperOk = vShL.vis > 0.45 && vShR.vis > 0.45;
+        appState.rawDetect.upperDetected = upperOk;
+
+        if (upperOk) {
+          const shCenterX = (vShL.x + vShR.x) * 0.5;
+          const shCenterY = (vShL.y + vShR.y) * 0.5;
+          const shDist = Math.hypot(vShR.x - vShL.x, vShR.y - vShL.y);
+          const torsoRollRad = Math.atan2(vShR.y - vShL.y, vShR.x - vShL.x);
+          const torsoYawRaw = (vShL.z - vShR.z) * 58; // depth difference between shoulders
+
+          appState.rawDetect.bodyX = shCenterX;
+          appState.rawDetect.bodyY = shCenterY;
+          appState.rawDetect.shoulderW = shDist;
+          appState.rawDetect.torsoRoll = (torsoRollRad * 180) / Math.PI;
+          appState.rawDetect.torsoYaw = torsoYawRaw;
+
+          // Position & Depth Scale relative to calibration
+          const dx = (shCenterX - appState.calib.bodyX) * 2.1;
+          const dy = (shCenterY - appState.calib.bodyY) * 2.0;
+          targetRig.bodyX = clamp(dx, -1.1, 1.1);
+          targetRig.bodyY = clamp(dy, -0.85, 0.85);
+          targetRig.bodyScale = clamp(shDist / Math.max(0.12, appState.calib.shoulderW), 0.72, 1.38);
+
+          targetRig.torsoRoll = clamp(appState.rawDetect.torsoRoll - appState.calib.torsoRoll, -24, 24);
+          targetRig.torsoYaw = clamp((torsoYawRaw - appState.calib.torsoYaw) * 0.85, -24, 24);
+          targetRig.hipShiftX = clamp(dx * 16 + targetRig.torsoRoll * 0.5, -26, 26);
+
+          // --- Left & Right Arm 2-Bone Retargeting ---
+          const mapArm = (sh, el, wr, side) => {
+            if (el.vis < 0.35) return null;
+            const upperAng = Math.atan2(el.y - sh.y, el.x - sh.x);
+            let foreAng = upperAng;
+            let stretch = 1.0;
+
+            if (wr.vis > 0.32) {
+              foreAng = Math.atan2(wr.y - el.y, wr.x - el.x);
+              const totalLen = Math.hypot(el.x - sh.x, el.y - sh.y) + Math.hypot(wr.x - el.x, wr.y - el.y);
+              stretch = clamp((totalLen / Math.max(0.14, shDist * 2.1)) * appState.armSens, 0.78, 1.22);
+            }
+
+            // Show cute pink paw pad when hand is raised above shoulder or waving!
+            const raisedRatio = clamp((sh.y - wr.y) / Math.max(0.12, shDist * 0.9) + 0.25, 0, 1);
+            return { upperAng, foreAng, stretch, palmShow: raisedRatio };
+          };
+
+          const leftArm = mapArm(vShL, vElL, vWrL, -1);
+          if (leftArm) {
+            targetRig.armLUpper = leftArm.upperAng;
+            targetRig.armLFore = leftArm.foreAng;
+            targetRig.armLStretch = leftArm.stretch;
+            targetRig.armLPalmShow = leftArm.palmShow;
+          }
+
+          const rightArm = mapArm(vShR, vElR, vWrR, 1);
+          if (rightArm) {
+            targetRig.armRUpper = rightArm.upperAng;
+            targetRig.armRFore = rightArm.foreAng;
+            targetRig.armRStretch = rightArm.stretch;
+            targetRig.armRPalmShow = rightArm.palmShow;
+          }
+
+          // --- Lower Body (Legs) Real-Time Detection vs Automatic Natural Fallback ---
+          const lowerVis = Math.min(vHipL.vis, vHipR.vis, vKnL.vis, vKnR.vis);
+          const ankleVis = Math.min(vAnL.vis, vAnR.vis);
+          const allowLegs = appState.mode === 'fullbody' && lowerVis > 0.52 && vKnL.y < 0.98 && vKnR.y < 0.98;
+
+          appState.rawDetect.lowerDetected = allowLegs;
+          appState.rawDetect.lowerConfidence = allowLegs ? 1 : 0;
+
+          if (allowLegs) {
+            const lSens = appState.legSens;
+            const rawLThigh = Math.atan2(vKnL.y - vHipL.y, (vKnL.x - vHipL.x) * lSens);
+            const rawRThigh = Math.atan2(vKnR.y - vHipR.y, (vKnR.x - vHipR.x) * lSens);
+
+            targetRig.legLThigh = clamp(rawLThigh, Math.PI * 0.22, Math.PI * 0.85);
+            targetRig.legRThigh = clamp(rawRThigh, Math.PI * 0.15, Math.PI * 0.78);
+
+            if (ankleVis > 0.42) {
+              const rawLShin = Math.atan2(vAnL.y - vKnL.y, (vAnL.x - vKnL.x) * lSens);
+              const rawRShin = Math.atan2(vAnR.y - vKnR.y, (vAnR.x - vKnR.x) * lSens);
+              targetRig.legLShin = clamp(rawLShin, Math.PI * 0.20, Math.PI * 0.86);
+              targetRig.legRShin = clamp(rawRShin, Math.PI * 0.14, Math.PI * 0.80);
+
+              // Detect single-foot lift / stepping!
+              const ankleDiff = (vAnR.y - vAnL.y) / Math.max(0.12, shDist);
+              targetRig.legLLift = clamp(ankleDiff * 1.4, 0, 1);
+              targetRig.legRLift = clamp(-ankleDiff * 1.4, 0, 1);
+            } else {
+              targetRig.legLShin = lerp(targetRig.legLThigh, Math.PI * 0.5, 0.45);
+              targetRig.legRShin = lerp(targetRig.legRThigh, Math.PI * 0.5, 0.45);
+              targetRig.legLLift = 0;
+              targetRig.legRLift = 0;
+            }
+
+            // Detect Squatting (hip-to-knee vertical compression)
+            const avgKneeDrop = ((vKnL.y - vHipL.y) + (vKnR.y - vHipR.y)) * 0.5;
+            const normLegDrop = avgKneeDrop / Math.max(0.12, shDist);
+            targetRig.squatAmount = clamp((1.15 - normLegDrop) * 1.2, 0, 0.85);
+          } else {
+            // Smooth Automatic Standing Fallback (coupled naturally to upper body weight shift & crouch)
+            applyAutomaticLegFallback();
+          }
+        }
+      } else {
+        appState.rawDetect.upperDetected = false;
+        appState.rawDetect.lowerDetected = false;
+        applyAutomaticLegFallback();
+      }
+
+      updateDetectionBadges();
+
+      // ---------- 3. DRAW SKELETON + FACE PIP PREVIEW ----------
+      if (appState.showPip) {
+        pipCtx.save();
+        if (mirror) {
+          pipCtx.translate(pipCanvas.width, 0);
+          pipCtx.scale(-1, 1);
+        }
+        pipCtx.drawImage(webcamVideo, 0, 0, pipCanvas.width, pipCanvas.height);
+        // Subtle dark tint for skeleton clarity
+        pipCtx.fillStyle = 'rgba(10, 12, 18, 0.25)';
+        pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
+
+        const pw = pipCanvas.width;
+        const ph = pipCanvas.height;
+
+        // Draw Pose Skeleton Wireframe
+        if (poseRes && poseRes.landmarks && poseRes.landmarks.length > 0 && appState.mode !== 'faceonly') {
+          const plm = poseRes.landmarks[0];
+          const drawEdges = (edges, color) => {
+            pipCtx.strokeStyle = color;
+            pipCtx.lineWidth = 2.6;
+            pipCtx.lineCap = 'round';
+            for (const [a, b] of edges) {
+              const pa = plm[a], pb = plm[b];
+              if (pa && pb && (pa.visibility ?? 0) > 0.35 && (pb.visibility ?? 0) > 0.35) {
+                pipCtx.beginPath();
+                pipCtx.moveTo(pa.x * pw, pa.y * ph);
+                pipCtx.lineTo(pb.x * pw, pb.y * ph);
+                pipCtx.stroke();
+              }
+            }
+          };
+          drawEdges(UPPER_EDGES, '#F497B6');
+          drawEdges(LOWER_EDGES, '#FFD93D');
+
+          // Joint dots
+          for (const idx of [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]) {
+            const p = plm[idx];
+            if (p && (p.visibility ?? 0) > 0.35) {
+              pipCtx.fillStyle = idx >= 25 ? '#FFD93D' : '#38BDF8';
+              pipCtx.beginPath();
+              pipCtx.arc(p.x * pw, p.y * ph, 3.3, 0, Math.PI * 2);
+              pipCtx.fill();
+            }
+          }
+        }
+
+        // Draw Face Keypoints
+        if (faceRes && faceRes.faceLandmarks && faceRes.faceLandmarks.length > 0) {
+          const flm = faceRes.faceLandmarks[0];
+          pipCtx.fillStyle = 'rgba(52, 211, 153, 0.9)';
+          for (const idx of [1, 10, 152, 33, 133, 362, 263, 13, 14, 61, 291]) {
+            const p = flm[idx];
+            if (p) {
+              pipCtx.beginPath();
+              pipCtx.arc(p.x * pw, p.y * ph, 2.2, 0, Math.PI * 2);
+              pipCtx.fill();
+            }
+          }
+        }
+        pipCtx.restore();
+      }
+    }
+
+    function applyAutomaticLegFallback() {
+      const shift = clamp(targetRig.bodyX * 0.14 + targetRig.torsoRoll * 0.004, -0.18, 0.18);
+      targetRig.legLThigh = Math.PI * 0.52 + shift;
+      targetRig.legLShin = Math.PI * 0.50 + shift * 0.4;
+      targetRig.legRThigh = Math.PI * 0.48 + shift;
+      targetRig.legRShin = Math.PI * 0.50 + shift * 0.4;
+      targetRig.legLLift = 0;
+      targetRig.legRLift = 0;
+      targetRig.squatAmount = clamp(targetRig.bodyY * 0.45, 0, 0.35);
+    }
+
+    function updateDetectionBadges() {
+      const fEl = document.getElementById('detFaceBadge');
+      const uEl = document.getElementById('detUpperBadge');
+      const lEl = document.getElementById('detLowerBadge');
+      const pf = document.getElementById('pipBadgeFace');
+      const pu = document.getElementById('pipBadgeUpper');
+      const pl = document.getElementById('pipBadgeLower');
+
+      if (!appState.cameraActive) {
+        fEl.textContent = '待機中'; fEl.className = 'text-[10px] font-extrabold text-gray-400';
+        uEl.textContent = '待機中'; uEl.className = 'text-[10px] font-extrabold text-gray-400';
+        lEl.textContent = '自動補完'; lEl.className = 'text-[10px] font-extrabold text-sky-300';
+        return;
+      }
+
+      if (appState.rawDetect.faceDetected) {
+        fEl.textContent = 'OK'; fEl.className = 'text-[10px] font-extrabold text-emerald-400';
+        pf.textContent = '顔:OK'; pf.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-emerald-400';
+      } else {
+        fEl.textContent = '未検出'; fEl.className = 'text-[10px] font-extrabold text-rose-400';
+        pf.textContent = '顔:--'; pf.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-rose-400';
+      }
+
+      if (appState.mode === 'faceonly') {
+        uEl.textContent = 'OFF'; uEl.className = 'text-[10px] font-extrabold text-gray-400';
+        pu.textContent = '腕:OFF'; pu.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-gray-400';
+      } else if (appState.rawDetect.upperDetected) {
+        uEl.textContent = 'OK'; uEl.className = 'text-[10px] font-extrabold text-emerald-400';
+        pu.textContent = '腕:OK'; pu.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-[#F497B6]';
+      } else {
+        uEl.textContent = '探索中'; uEl.className = 'text-[10px] font-extrabold text-amber-300';
+        pu.textContent = '腕:--'; pu.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-amber-300';
+      }
+
+      if (appState.rawDetect.lowerDetected && appState.mode === 'fullbody') {
+        lEl.textContent = '検出中'; lEl.className = 'text-[10px] font-extrabold text-[#FFD93D]';
+        pl.textContent = '脚:検出中'; pl.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-[#FFD93D]';
+      } else {
+        lEl.textContent = '自動補完'; lEl.className = 'text-[10px] font-extrabold text-sky-300';
+        pl.textContent = '脚:自動補完'; pl.className = 'px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-sky-300';
+      }
+    }
+
+    // --- Web Audio API Microphone Lip-Sync ---
+    async function toggleMic(enable) {
+      if (enable) {
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(micStream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.65;
+          src.connect(analyser);
+          micData = new Uint8Array(analyser.frequencyBinCount);
+          appState.micActive = true;
+          showToast('🎙️ マイク音声リップシンクを有効にしました！');
+        } catch (err) {
+          document.getElementById('micToggle').checked = false;
+          appState.micActive = false;
+          showToast('マイク権限が許可されませんでした。', 3000);
+        }
+      } else {
+        if (micStream) micStream.getTracks().forEach((t) => t.stop());
+        if (audioCtx) audioCtx.close();
+        micStream = null; audioCtx = null; analyser = null;
+        appState.micActive = false;
+        appState.micVolume = 0;
+        showToast('マイクリップシンクをオフにしました');
+      }
+    }
+
+    function sampleMicVolume() {
+      if (!appState.micActive || !analyser) {
+        appState.micVolume = 0;
+        return;
+      }
+      analyser.getByteTimeDomainData(micData);
+      let sum = 0;
+      for (let i = 0; i < micData.length; i++) {
+        const v = (micData[i] - 128) / 128;
+        sum += v * v;
+      }
+      appState.micVolume = clamp((Math.sqrt(sum / micData.length) - 0.015) * 9.5, 0, 1);
+    }
+
+    // =========================================================================
+    // 7. SIMULATION, FALLBACK MODES, MOTIONS & 60FPS MAIN LOOP
+    // =========================================================================
+    function updateSimulation(dt, time) {
+      sampleMicVolume();
+
+      const isCamMode =
+        (appState.mode === 'fullbody' || appState.mode === 'upperbody' || appState.mode === 'faceonly') &&
+        appState.cameraActive;
+
+      if (isCamMode) {
+        processCameraFrame();
+        if (appState.mode === 'faceonly') {
+          // Gentle natural idle arms & legs in Face-Only mode
+          targetRig.armLUpper = Math.PI * 0.65 + Math.sin(time * 1.6) * 0.05;
+          targetRig.armLFore = Math.PI * 0.59 + Math.sin(time * 1.6 - 0.4) * 0.05;
+          targetRig.armLStretch = 1.0;
+          targetRig.armLPalmShow = 0;
+          targetRig.armRUpper = Math.PI * 0.35 - Math.sin(time * 1.6) * 0.05;
+          targetRig.armRFore = Math.PI * 0.41 - Math.sin(time * 1.6 - 0.4) * 0.05;
+          targetRig.armRStretch = 1.0;
+          targetRig.armRPalmShow = 0;
+          applyAutomaticLegFallback();
+        }
+      } else if (appState.mode === 'mouse') {
+        const mx = appState.mouseX;
+        const my = appState.mouseY;
+
+        targetRig.headYaw = clamp(mx * 28, -32, 32);
+        targetRig.headPitch = clamp(my * 24, -26, 30);
+        targetRig.headRoll = clamp(mx * 12 + Math.sin(time * 1.1) * 2.5, -24, 24);
+        targetRig.gazeX = clamp(mx * 0.95, -1, 1);
+        targetRig.gazeY = clamp(my * 0.85, -1, 1);
+        targetRig.browY = clamp(-my * 0.45, -0.4, 0.7);
+
+        targetRig.bodyX = clamp(mx * 0.25, -0.5, 0.5);
+        targetRig.bodyY = clamp(my * 0.12, -0.25, 0.25);
+        targetRig.bodyScale = 1.0;
+        targetRig.torsoYaw = clamp(mx * 13, -18, 18);
+        targetRig.torsoRoll = clamp(mx * 6, -12, 12);
+        targetRig.hipShiftX = clamp(mx * 10, -16, 16);
+
+        if (appState.rightMouseDown) {
+          // Hold Right-Click -> Cute Banzai!
+          targetRig.armLUpper = -Math.PI * 0.72 + Math.sin(time * 9) * 0.08;
+          targetRig.armLFore = -Math.PI * 0.62 + Math.sin(time * 9) * 0.12;
+          targetRig.armLStretch = 1.08;
+          targetRig.armLPalmShow = 1.0;
+          targetRig.armRUpper = -Math.PI * 0.28 - Math.sin(time * 9) * 0.08;
+          targetRig.armRFore = -Math.PI * 0.38 - Math.sin(time * 9) * 0.12;
+          targetRig.armRStretch = 1.08;
+          targetRig.armRPalmShow = 1.0;
+        } else {
+          // Cursor subtly lifts/guides the matching hand!
+          const liftR = clamp((-my + 0.15) * (mx > -0.1 ? 1 : 0.2), 0, 1);
+          const liftL = clamp((-my + 0.15) * (mx < 0.1 ? 1 : 0.2), 0, 1);
+
+          targetRig.armLUpper = lerp(Math.PI * 0.65, -Math.PI * 0.85, liftL * 0.65);
+          targetRig.armLFore = lerp(Math.PI * 0.58, -Math.PI * 0.58, liftL * 0.75);
+          targetRig.armLStretch = 1.0;
+          targetRig.armLPalmShow = liftL * 0.85;
+
+          targetRig.armRUpper = lerp(Math.PI * 0.35, -Math.PI * 0.15, liftR * 0.65);
+          targetRig.armRFore = lerp(Math.PI * 0.42, -Math.PI * 0.42, liftR * 0.75);
+          targetRig.armRStretch = 1.0;
+          targetRig.armRPalmShow = liftR * 0.85;
+        }
+
+        // Subtle stepping legs follow mouse lean
+        targetRig.legLThigh = Math.PI * 0.52 + mx * 0.07;
+        targetRig.legLShin = Math.PI * 0.50 + mx * 0.03;
+        targetRig.legRThigh = Math.PI * 0.48 + mx * 0.07;
+        targetRig.legRShin = Math.PI * 0.50 + mx * 0.03;
+        targetRig.legLLift = 0;
+        targetRig.legRLift = 0;
+        targetRig.squatAmount = clamp(my * 0.28, 0, 0.32);
+
+        const baseMouth = ['normal', 'happy', 'sparkle'].includes(appState.expression) ? 0.36 : 0.0;
+        targetRig.mouthOpen = clamp(Math.max(baseMouth, appState.micVolume, appState.mouseTalkBoost), 0, 1);
+      } else {
+        // Auto Full-Body Lively Demo Mode (waves, sways, steps, chats!)
+        const cyc = time % 12;
+        targetRig.headYaw = Math.sin(time * 1.1) * 18;
+        targetRig.headPitch = Math.sin(time * 1.4) * 10 + 2;
+        targetRig.headRoll = Math.sin(time * 0.9) * 10;
+        targetRig.gazeX = Math.sin(time * 1.1 + 0.3) * 0.55;
+        targetRig.gazeY = Math.sin(time * 1.4) * 0.3;
+        targetRig.browY = Math.max(0, Math.sin(time * 1.0) * 0.35);
+
+        const sway = Math.sin(time * 1.8);
+        targetRig.bodyX = sway * 0.16;
+        targetRig.bodyY = Math.abs(Math.sin(time * 3.6)) * -0.08;
+        targetRig.bodyScale = 1.0;
+        targetRig.torsoYaw = sway * 11;
+        targetRig.torsoRoll = sway * 8;
+        targetRig.hipShiftX = sway * 14;
+
+        if (cyc < 4.0) {
+          // Cute right-hand wave!
+          targetRig.armRUpper = -Math.PI * 0.26;
+          targetRig.armRFore = -Math.PI * 0.46 + Math.sin(time * 11) * 0.32;
+          targetRig.armRStretch = 1.06;
+          targetRig.armRPalmShow = 1.0;
+          targetRig.armLUpper = Math.PI * 0.66;
+          targetRig.armLFore = Math.PI * 0.56;
+          targetRig.armLStretch = 1.0;
+          targetRig.armLPalmShow = 0;
+        } else if (cyc < 7.5) {
+          // Cheerful both-hands bounce!
+          targetRig.armLUpper = -Math.PI * 0.78 + Math.sin(time * 5) * 0.14;
+          targetRig.armLFore = -Math.PI * 0.60 + Math.sin(time * 5) * 0.16;
+          targetRig.armLStretch = 1.04;
+          targetRig.armLPalmShow = 0.9;
+          targetRig.armRUpper = -Math.PI * 0.22 - Math.sin(time * 5) * 0.14;
+          targetRig.armRFore = -Math.PI * 0.40 - Math.sin(time * 5) * 0.16;
+          targetRig.armRStretch = 1.04;
+          targetRig.armRPalmShow = 0.9;
+        } else {
+          // Playful stepping idle
+          targetRig.armLUpper = Math.PI * 0.64 + sway * 0.18;
+          targetRig.armLFore = Math.PI * 0.54 + sway * 0.22;
+          targetRig.armLStretch = 1.0;
+          targetRig.armLPalmShow = 0.1;
+          targetRig.armRUpper = Math.PI * 0.36 + sway * 0.18;
+          targetRig.armRFore = Math.PI * 0.46 + sway * 0.22;
+          targetRig.armRStretch = 1.0;
+          targetRig.armRPalmShow = 0.1;
+        }
+
+        // Cute rhythmic stepping feet
+        const stepL = Math.max(0, Math.sin(time * 3.6));
+        const stepR = Math.max(0, -Math.sin(time * 3.6));
+        targetRig.legLThigh = Math.PI * 0.52 + stepL * 0.12;
+        targetRig.legLShin = Math.PI * 0.50 - stepL * 0.10;
+        targetRig.legLLift = stepL * 0.45;
+        targetRig.legRThigh = Math.PI * 0.48 - stepR * 0.12;
+        targetRig.legRShin = Math.PI * 0.50 + stepR * 0.10;
+        targetRig.legRLift = stepR * 0.45;
+        targetRig.squatAmount = (1 - Math.abs(Math.sin(time * 3.6))) * 0.14;
+
+        const chatPulse = Math.max(0, Math.sin(time * 5.6) * Math.sin(time * 1.9)) * 0.65;
+        const baseMouth = ['normal', 'happy', 'sparkle'].includes(appState.expression) ? 0.30 : 0.0;
+        targetRig.mouthOpen = clamp(Math.max(baseMouth, chatPulse, appState.micVolume), 0, 1);
+      }
+
+      // Apply Desk Mode arm placement override ONLY when not actively camera-tracking arms
+      if (appState.sceneMode === 'desk' && !isCamMode && !appState.motion.type && !appState.rightMouseDown) {
+        const typL = Math.sin(time * 16) * 0.06 * appState.typingEnergy;
+        const typR = Math.sin(time * 16 + Math.PI) * 0.06 * appState.typingEnergy;
+        targetRig.armLUpper = Math.PI * 0.62;
+        targetRig.armLFore = Math.PI * 0.42 + typL;
+        targetRig.armLStretch = 1.02;
+        targetRig.armLPalmShow = 0;
+        targetRig.armRUpper = Math.PI * 0.38;
+        targetRig.armRFore = Math.PI * 0.58 + typR;
+        targetRig.armRStretch = 1.02;
+        targetRig.armRPalmShow = 0;
+      }
+
+      // Apply One-Shot Full-Body Motion Overrides
+      if (appState.motion.type) {
+        appState.motion.time += dt;
+        const p = clamp(appState.motion.time / appState.motion.duration, 0, 1);
+        const env = Math.sin(p * Math.PI);
+
+        if (appState.motion.type === 'wave') {
+          targetRig.armRUpper = lerp(targetRig.armRUpper, -Math.PI * 0.25, env);
+          targetRig.armRFore = lerp(targetRig.armRFore, -Math.PI * 0.48 + Math.sin(time * 14) * 0.35, env);
+          targetRig.armRStretch = lerp(targetRig.armRStretch, 1.08, env);
+          targetRig.armRPalmShow = Math.max(targetRig.armRPalmShow, env);
+        } else if (appState.motion.type === 'banzai') {
+          targetRig.armLUpper = lerp(targetRig.armLUpper, -Math.PI * 0.72, env);
+          targetRig.armLFore = lerp(targetRig.armLFore, -Math.PI * 0.64 + Math.sin(time * 12) * 0.14, env);
+          targetRig.armLStretch = 1.1;
+          targetRig.armLPalmShow = Math.max(targetRig.armLPalmShow, env);
+          targetRig.armRUpper = lerp(targetRig.armRUpper, -Math.PI * 0.28, env);
+          targetRig.armRFore = lerp(targetRig.armRFore, -Math.PI * 0.36 - Math.sin(time * 12) * 0.14, env);
+          targetRig.armRStretch = 1.1;
+          targetRig.armRPalmShow = Math.max(targetRig.armRPalmShow, env);
+        } else if (appState.motion.type === 'dance') {
+          const beat = Math.sin(time * 7.5);
+          const beat2 = Math.cos(time * 7.5);
+          targetRig.torsoRoll = beat * 14 * env;
+          targetRig.hipShiftX = beat * 20 * env;
+          targetRig.armLUpper = lerp(targetRig.armLUpper, -Math.PI * 0.82 + beat * 0.38, env);
+          targetRig.armLFore = lerp(targetRig.armLFore, -Math.PI * 0.56 + beat2 * 0.45, env);
+          targetRig.armLPalmShow = env * 0.9;
+          targetRig.armRUpper = lerp(targetRig.armRUpper, -Math.PI * 0.18 + beat * 0.38, env);
+          targetRig.armRFore = lerp(targetRig.armRFore, -Math.PI * 0.44 - beat2 * 0.45, env);
+          targetRig.armRPalmShow = env * 0.9;
+          targetRig.legLLift = Math.max(0, beat) * 0.65 * env;
+          targetRig.legRLift = Math.max(0, -beat) * 0.65 * env;
+          targetRig.squatAmount = (0.18 + Math.abs(beat2) * 0.16) * env;
+        }
+
+        if (appState.motion.time >= appState.motion.duration) {
+          appState.motion.type = null;
+        }
+      }
+
+      // Decay click talk boost
+      appState.mouseTalkBoost = Math.max(0, appState.mouseTalkBoost - dt * 2.4);
+
+      // Auto-Blink (when camera face isn't driving eyes)
+      if ((!isCamMode || !appState.rawDetect.faceDetected) && appState.autoBlink) {
+        appState.blinkTimer -= dt;
+        if (appState.blinkTimer <= 0 && !appState.isBlinking) {
+          appState.isBlinking = true;
+          appState.blinkProgress = 0;
+        }
+        if (appState.isBlinking) {
+          appState.blinkProgress += dt * 7.4;
+          const b = 1 - Math.sin(clamp(appState.blinkProgress, 0, 1) * Math.PI);
+          targetRig.eyeLOpen = b;
+          targetRig.eyeROpen = b;
+          if (appState.blinkProgress >= 1) {
+            appState.isBlinking = false;
+            appState.blinkTimer = 2.2 + Math.random() * 3.4;
+          }
+        } else {
+          targetRig.eyeLOpen = 1;
+          targetRig.eyeROpen = 1;
+        }
+      }
+
+      // Occasional Cute Ear Twitch
+      appState.earTwitchTimer -= dt;
+      if (appState.earTwitchTimer <= 0) {
+        appState.earTwitchTimer = 4.0 + Math.random() * 5.2;
+        appState.earTwitchSide = Math.random() > 0.5 ? 1 : -1;
+        appState.earTwitchVal = 1.0;
+      }
+      if (appState.earTwitchVal > 0.001) {
+        appState.earTwitchVal = Math.max(0, appState.earTwitchVal - dt * 5.6);
+      }
+
+      // Breathing
+      targetRig.breath = 0.5 + 0.5 * Math.sin(time * 2.15);
+
+      // Smooth Interpolation (angle-aware for limbs!)
+      const sm = clamp(1 - Math.pow(1 - appState.smoothing, dt * 60), 0.05, 1);
+      const angleKeys = new Set([
+        'armLUpper', 'armLFore', 'armRUpper', 'armRFore',
+        'legLThigh', 'legLShin', 'legRThigh', 'legRShin',
+      ]);
+
+      for (const k of Object.keys(rig)) {
+        if (angleKeys.has(k)) {
+          rig[k] = lerpAngle(rig[k], targetRig[k], Math.min(1, sm * 1.25));
+        } else {
+          const factor = k === 'eyeLOpen' || k === 'eyeROpen' ? Math.min(1, sm * 2.1) : sm;
+          rig[k] = lerp(rig[k], targetRig[k], factor);
+        }
+      }
+
+      // Compute Velocity Impulses for Multi-Joint Spring Physics
+      const pMult = appState.physicsIntensity;
+      const safeDt = Math.max(dt, 0.008);
+      const vYaw = (rig.headYaw - prevHeadYaw) / safeDt;
+      const vPitch = (rig.headPitch - prevHeadPitch) / safeDt;
+      const vRoll = (rig.headRoll - prevHeadRoll) / safeDt;
+      const vBx = (rig.bodyX - prevBodyX) / safeDt;
+      const vBy = (rig.bodyY - prevBodyY) / safeDt;
+
+      prevHeadYaw = rig.headYaw;
+      prevHeadPitch = rig.headPitch;
+      prevHeadRoll = rig.headRoll;
+      prevBodyX = rig.bodyX;
+      prevBodyY = rig.bodyY;
+
+      const latImp = clamp((-vYaw * 0.0016 - vRoll * 0.0022 - vBx * 0.24) * pMult, -0.5, 0.5);
+      const vertImp = clamp((vPitch * 0.0018 + vBy * 0.28) * pMult, -0.5, 0.5);
+
+      springs.earL.step(dt, -rig.headRoll * 0.015 * pMult, latImp * 0.65 + vertImp * 0.45);
+      springs.earR.step(dt, -rig.headRoll * 0.015 * pMult, latImp * 0.65 - vertImp * 0.45);
+      springs.leafMain.step(dt, (-rig.headRoll * 0.022 - rig.headYaw * 0.008) * pMult, latImp * 1.4 + vertImp * 0.95);
+      springs.leafSub.step(dt, springs.leafMain.value * 0.85, latImp * 0.9);
+
+      // 2-Segment Pendulum Hoodie Drawstrings
+      const gravTilt = -(rig.torsoRoll * Math.PI) / 180 * 0.85;
+      springs.strL1.step(dt, gravTilt, latImp * 1.25);
+      springs.strL2.step(dt, springs.strL1.value * 1.15, latImp * 0.95);
+      springs.strR1.step(dt, gravTilt, latImp * 1.35);
+      springs.strR2.step(dt, springs.strR1.value * 1.15, latImp * 1.05);
+
+      // Headphones
+      springs.hpY.step(dt, 0, vertImp * 0.75);
+      springs.hpRot.step(dt, -rig.headRoll * 0.014 * pMult, latImp * 0.72);
+
+      // 3-Segment Cat Tail
+      springs.tail1.step(dt, -rig.torsoYaw * 0.025 * pMult, latImp * 0.6);
+      springs.tail2.step(dt, springs.tail1.value * 1.1, latImp * 0.55);
+      springs.tail3.step(dt, springs.tail2.value * 1.15, latImp * 0.5);
+
+      springs.jumpY.step(dt, 0);
+
+      // Typing energy in desk mode
+      const targetTyping = appState.sceneMode === 'desk' ? Math.max(0.25, rig.mouthOpen * 1.25) : 0;
+      appState.typingEnergy = lerp(appState.typingEnergy, targetTyping, dt * 6);
+    }
+
+    let lastFrameTime = performance.now();
+    let fpsFrames = 0;
+    let fpsClock = performance.now();
+
+    function mainLoop(now) {
+      const dt = Math.min((now - lastFrameTime) / 1000, 0.05);
+      lastFrameTime = now;
+      const timeSec = now / 1000;
+
+      updateSimulation(dt, timeSec);
+
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawBackground(ctx, stageW, stageH, timeSec, false);
+      renderCharacter(ctx, timeSec);
+      ctx.restore();
+
+      fpsFrames++;
+      if (now - fpsClock >= 500) {
+        const fps = Math.round((fpsFrames * 1000) / (now - fpsClock));
+        document.getElementById('headerFps').textContent = `${fps} FPS`;
+        fpsFrames = 0;
+        fpsClock = now;
+      }
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    // =========================================================================
+    // 8. 100% CLEAN UI HIDE SYSTEM & LIVE COMMENT SIMULATION
+    // =========================================================================
+    function setAllUiHidden(hidden) {
+      if (appState.uiHidden === hidden) return;
+      appState.uiHidden = hidden;
+      document.body.classList.toggle('ui-hidden-all', hidden);
+
+      if (hidden) {
+        if (appState.showHideGuideToast) {
+          showToast('全てのUIを非表示にしました｜戻す：Hキー または 画面ダブルクリック', 2500);
+        }
+      } else {
+        showToast('UIを再表示しました', 1600);
+      }
+    }
+
+    function toggleAllUiHidden() {
+      setAllUiHidden(!appState.uiHidden);
+    }
+
+    // Live-Style Comment Feed for Desk Mode
+    const sampleComments = [
+      { user: 'ねこすき', color: '#F497B6', text: 'こんにちはー！' },
+      { user: 'リスナーA', color: '#60A5FA', text: '待ってました！' },
+      { user: 'もふもふ', color: '#FFD93D', text: 'たかねこ全身動いて可愛い〜💕' },
+      { user: 'ゲーマー猫', color: '#34D399', text: 'ナイスプレイ！！' },
+      { user: 'おやつ係', color: '#A78BFA', text: 'バンザイしてー！🙌' },
+      { user: '常連さん', color: '#FB923C', text: '神回確定✨' },
+      { user: 'しろねこ', color: '#F472B6', text: 'しっぽ揺れてるの最高wwwww' },
+      { user: '夜更かし民', color: '#38BDF8', text: 'GG！！たのしー！！！！' },
+    ];
+    let sampleCommentIdx = 0;
+
+    function pushLiveComment(user, text, color = '#FFD93D') {
+      const feed = document.getElementById('commentFeed');
+      const item = document.createElement('div');
+      item.className = 'comment-item flex items-start gap-2 leading-snug';
+      item.innerHTML = `
+        <span class="w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-[#18181B]" style="background:${color}">🐾</span>
+        <div class="min-w-0">
+          <span class="text-[10px] font-bold mr-1.5" style="color:${color}"></span>
+          <span class="text-[11px] text-gray-100 break-words"></span>
+        </div>
+      `;
+      item.querySelectorAll('span')[1].textContent = user;
+      item.querySelectorAll('span')[2].textContent = text;
+      feed.appendChild(item);
+      while (feed.children.length > 18) feed.removeChild(feed.firstChild);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    // Seed initial comments & gentle periodic stream chat
+    for (let i = 0; i < 4; i++) {
+      const c = sampleComments[sampleCommentIdx++ % sampleComments.length];
+      pushLiveComment(c.user, c.text, c.color);
+    }
+    setInterval(() => {
+      if (appState.sceneMode === 'desk' && appState.showLiveChat && !appState.uiHidden) {
+        const c = sampleComments[sampleCommentIdx++ % sampleComments.length];
+        pushLiveComment(c.user, c.text, c.color);
+      }
+    }, 4500);
+
+    document.getElementById('commentForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inp = document.getElementById('commentInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+      pushLiveComment('あなた', txt, '#F497B6');
+      inp.value = '';
+    });
+
+    // =========================================================================
+    // 9. UI CONTROLS WIRING & INTERACTIONS
+    // =========================================================================
+    function setCamBadge(text, cls) {
+      const el = document.getElementById('camStateBadge');
+      el.textContent = text;
+      el.className = `text-[10px] px-2 py-0.5 rounded-full font-bold ${cls}`;
+    }
+
+    function updateCameraUIButtons(active, loading) {
+      const qBtn = document.getElementById('quickCamBtn');
+      const qLbl = document.getElementById('quickCamLabel');
+      const dBtn = document.getElementById('dockCamBtn');
+
+      if (loading) {
+        qLbl.textContent = '読込中...';
+        dBtn.textContent = '⏳ モデル読込中...';
+      } else if (active) {
+        qLbl.textContent = 'カメラ停止';
+        qBtn.className = 'px-3 sm:px-3.5 py-2 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition active:scale-95 bg-rose-500 text-white shadow-lg shadow-rose-500/30 hover:bg-rose-600';
+        dBtn.textContent = '■ カメラ停止';
+        dBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-xs bg-rose-500 text-white hover:bg-rose-600 active:scale-95 transition';
+      } else {
+        qLbl.textContent = 'カメラ開始';
+        qBtn.className = 'px-3 sm:px-3.5 py-2 rounded-2xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition active:scale-95 bg-gradient-to-r from-[#F497B6] to-[#FF7BA9] text-[#18181B] shadow-lg shadow-pink-500/25 hover:brightness-105';
+        dBtn.textContent = '▶ カメラ開始';
+        dBtn.className = 'py-2.5 px-3 rounded-xl font-bold text-xs bg-gradient-to-r from-[#F497B6] to-[#FF7BA9] text-[#18181B] hover:brightness-105 active:scale-95 transition';
+      }
+    }
+
+    function updatePipVisibility() {
+      pipContainer.classList.toggle('hidden', !(appState.cameraActive && appState.showPip));
+    }
+
+    function setTrackingMode(mode, autoStartCamera = true) {
+      const needsCam = mode === 'fullbody' || mode === 'upperbody' || mode === 'faceonly';
+      if (needsCam && !appState.cameraActive && autoStartCamera) {
+        appState.mode = mode;
+        startCameraTracking();
+      } else {
+        appState.mode = mode;
+      }
+
+      document.querySelectorAll('.mode-pill').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.mode === appState.mode);
+      });
+
+      const dot = document.getElementById('headerStatusDot');
+      const txt = document.getElementById('headerStatusText');
+      const map = {
+        fullbody: ['bg-emerald-400', '全身＋顔トラッキング'],
+        upperbody: ['bg-emerald-400', '上半身＋顔トラッキング'],
+        faceonly: ['bg-teal-400', '顔のみトラッキング'],
+        mouse: ['bg-[#FFD93D]', 'マウス操作モード'],
+        auto: ['bg-sky-400', 'オート全身デモ再生中'],
+      };
+      const [col, label] = map[appState.mode] || map.mouse;
+      dot.className = `w-2.5 h-2.5 rounded-full ${col} status-pulse`;
+      txt.textContent = label;
+    }
+
+    function setExpression(expr) {
+      appState.expression = expr;
+      document.querySelectorAll('.expr-card').forEach((c) => c.classList.toggle('active', c.dataset.expr === expr));
+      springs.leafMain.velocity += 2.3;
+      springs.earL.velocity += 1.4;
+      springs.earR.velocity -= 1.4;
+    }
+
+    function triggerMotion(type) {
+      appState.motion.type = type;
+      appState.motion.time = 0;
+      if (type === 'jump') {
+        appState.motion.duration = 0.65;
+        springs.jumpY.velocity = -960;
+        springs.leafMain.velocity += 4.5;
+        springs.hpY.velocity += 2.8;
+        springs.earL.velocity += 2.8;
+        springs.earR.velocity += 2.8;
+      } else if (type === 'wave') {
+        appState.motion.duration = 1.8;
+        springs.leafMain.velocity += 2.5;
+      } else if (type === 'banzai') {
+        appState.motion.duration = 1.9;
+        springs.jumpY.velocity = -420;
+        springs.leafMain.velocity += 3.6;
+      } else if (type === 'dance') {
+        appState.motion.duration = 3.2;
+        springs.leafMain.velocity += 3.0;
+      } else if (type === 'tilt') {
+        appState.motion.duration = 1.45;
+        springs.leafMain.velocity -= 3.2;
+      } else if (type === 'shock') {
+        appState.motion.duration = 0.8;
+        springs.leafMain.velocity += 4.6;
+        springs.strL1.velocity += 3.8;
+        springs.strR1.velocity -= 3.8;
+      }
+    }
+
+    function setSceneMode(mode) {
+      appState.sceneMode = mode;
+      const isDesk = mode === 'desk';
+      document.getElementById('sceneFullBodyBtn').className = isDesk
+        ? 'scene-btn py-2.5 px-3 rounded-2xl border-2 border-white/10 bg-white/5 text-xs font-bold text-left transition hover:bg-white/10'
+        : 'scene-btn py-2.5 px-3 rounded-2xl border-2 border-[#F497B6] bg-[#F497B6]/20 text-xs font-bold text-left transition';
+      document.getElementById('sceneDeskBtn').className = isDesk
+        ? 'scene-btn py-2.5 px-3 rounded-2xl border-2 border-[#FFD93D] bg-[#FFD93D]/20 text-xs font-bold text-left transition'
+        : 'scene-btn py-2.5 px-3 rounded-2xl border-2 border-white/10 bg-white/5 text-xs font-bold text-left transition hover:bg-white/10';
+
+      document.getElementById('liveChatToggleWrap').classList.toggle('hidden', !isDesk);
+      document.getElementById('liveCommentBox').classList.toggle('hidden', !(isDesk && appState.showLiveChat));
+      springs.leafMain.velocity += 2.4;
+    }
+
+    function setBackground(bgType) {
+      appState.bgType = bgType;
+      document.querySelectorAll('.bg-card').forEach((c) => c.classList.toggle('active', c.dataset.bg === bgType));
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('hidden', p.id !== `tab-${t}`));
+      });
+    });
+
+    // Core UI Bindings
+    document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
+      document.getElementById('sidebarDock').classList.toggle('collapsed');
+    });
+    document.getElementById('quickCamBtn').addEventListener('click', startCameraTracking);
+    document.getElementById('dockCamBtn').addEventListener('click', startCameraTracking);
+    document.getElementById('calibrateBtn').addEventListener('click', () => calibrateNeutralPose(false));
+    document.getElementById('hideAllUiBtn').addEventListener('click', () => setAllUiHidden(true));
+    document.getElementById('hoverRestoreBtn').addEventListener('click', () => setAllUiHidden(false));
+
+    document.querySelectorAll('.mode-pill').forEach((b) => b.addEventListener('click', () => setTrackingMode(b.dataset.mode, true)));
+    document.querySelectorAll('.expr-card').forEach((c) => c.addEventListener('click', () => setExpression(c.dataset.expr)));
+    document.querySelectorAll('.motion-btn').forEach((b) => b.addEventListener('click', () => triggerMotion(b.dataset.motion)));
+    document.querySelectorAll('.bg-card').forEach((c) => c.addEventListener('click', () => setBackground(c.dataset.bg)));
+
+    document.getElementById('sceneFullBodyBtn').addEventListener('click', () => setSceneMode('fullbody'));
+    document.getElementById('sceneDeskBtn').addEventListener('click', () => setSceneMode('desk'));
+    document.getElementById('liveChatToggle').addEventListener('change', (e) => {
+      appState.showLiveChat = e.target.checked;
+      document.getElementById('liveCommentBox').classList.toggle('hidden', !(appState.sceneMode === 'desk' && appState.showLiveChat));
+    });
+
+    // Toggles
+    document.getElementById('micToggle').addEventListener('change', (e) => toggleMic(e.target.checked));
+    document.getElementById('mirrorToggle').addEventListener('change', (e) => (appState.mirror = e.target.checked));
+    document.getElementById('pipToggle').addEventListener('change', (e) => {
+      appState.showPip = e.target.checked;
+      updatePipVisibility();
+    });
+    document.getElementById('autoBlinkToggle').addEventListener('change', (e) => (appState.autoBlink = e.target.checked));
+    document.getElementById('hideGuideToastToggle').addEventListener('change', (e) => (appState.showHideGuideToast = e.target.checked));
+    document.getElementById('hoverRestoreToggle').addEventListener('change', (e) => {
+      appState.allowHoverRestore = e.target.checked;
+      document.body.classList.toggle('allow-hover-restore', appState.allowHoverRestore);
+    });
+
+    // Sliders
+    document.getElementById('moveRangeSlider').addEventListener('input', (e) => {
+      appState.moveRange = parseFloat(e.target.value);
+      document.getElementById('valMoveRange').textContent = `${appState.moveRange.toFixed(2)}x`;
+    });
+    document.getElementById('armSensSlider').addEventListener('input', (e) => {
+      appState.armSens = parseFloat(e.target.value);
+      document.getElementById('valArmSens').textContent = `${appState.armSens.toFixed(2)}x`;
+    });
+    document.getElementById('legSensSlider').addEventListener('input', (e) => {
+      appState.legSens = parseFloat(e.target.value);
+      document.getElementById('valLegSens').textContent = `${appState.legSens.toFixed(2)}x`;
+    });
+    document.getElementById('smoothSlider').addEventListener('input', (e) => {
+      appState.smoothing = parseFloat(e.target.value);
+      document.getElementById('valSmooth').textContent = appState.smoothing.toFixed(2);
+    });
+    document.getElementById('physicsSlider').addEventListener('input', (e) => {
+      appState.physicsIntensity = parseFloat(e.target.value);
+      document.getElementById('valPhysics').textContent = `${appState.physicsIntensity.toFixed(2)}x`;
+    });
+
+    // Custom Background Color & Upload
+    document.getElementById('customColorPicker').addEventListener('input', (e) => {
+      appState.customColor = e.target.value;
+      setBackground('customColor');
+    });
+    document.getElementById('bgImageInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          appState.customBgImage = img;
+          setBackground('customImage');
+          showToast('🖼️ カスタム背景画像を適用しました！');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset Position/Scale
+    document.getElementById('resetStageBtn').addEventListener('click', () => {
+      appState.stageX = 0;
+      appState.stageY = 0;
+      appState.stageScale = 1.0;
+      showToast('キャラクターの位置・拡大率をリセットしました');
+    });
+
+    // PNG Snapshot Export (supports true alpha transparency in 'checker' mode)
+    document.getElementById('snapshotBtn').addEventListener('click', () => {
+      try {
+        const exp = document.createElement('canvas');
+        exp.width = canvas.width;
+        exp.height = canvas.height;
+        const ectx = exp.getContext('2d');
+        ectx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const t = performance.now() / 1000;
+        drawBackground(ectx, stageW, stageH, t, true);
+        renderCharacter(ectx, t);
+        const link = document.createElement('a');
+        link.download = `takaneko-pro-${Date.now()}.png`;
+        link.href = exp.toDataURL('image/png');
+        link.click();
+        showToast('📸 スクリーンショットをPNG保存しました！');
+      } catch (err) {
+        showToast('PNG保存に失敗しました');
+      }
+    });
+
+    // --- Direct Canvas Mouse / Touch Interaction + 2-Second Long-Press UI Restore ---
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0, origX = 0, origY = 0;
+    let lastPinchDist = null;
+    let longPressTimer = null;
+
+    window.addEventListener('mousemove', (e) => {
+      appState.mouseX = clamp((e.clientX / stageW) * 2 - 1, -1, 1);
+      appState.mouseY = clamp((e.clientY / stageH) * 2 - 1, -1, 1);
+      if (isDragging) {
+        appState.stageX = origX + (e.clientX - dragStartX);
+        appState.stageY = origY + (e.clientY - dragStartY);
+      }
+    });
+
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button === 2) {
+        appState.rightMouseDown = true;
+        return;
+      }
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      origX = appState.stageX;
+      origY = appState.stageY;
+      appState.mouseTalkBoost = 0.85;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 2) appState.rightMouseDown = false;
+      isDragging = false;
+    });
+
+    // Double-click restores UI when hidden, or triggers cute jump when visible
+    canvas.addEventListener('dblclick', () => {
+      if (appState.uiHidden) {
+        setAllUiHidden(false);
+      } else {
+        triggerMotion('jump');
+      }
+    });
+
+    canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const f = e.deltaY < 0 ? 1.08 : 0.92;
+        appState.stageScale = clamp(appState.stageScale * f, 0.4, 2.8);
+      },
+      { passive: false }
+    );
+
+    // Touch Drag, Pinch Zoom & 2-Second Long-Press to Restore UI
+    canvas.addEventListener(
+      'touchstart',
+      (e) => {
+        clearTimeout(longPressTimer);
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          isDragging = true;
+          dragStartX = t.clientX;
+          dragStartY = t.clientY;
+          origX = appState.stageX;
+          origY = appState.stageY;
+          appState.mouseX = clamp((t.clientX / stageW) * 2 - 1, -1, 1);
+          appState.mouseY = clamp((t.clientY / stageH) * 2 - 1, -1, 1);
+          appState.mouseTalkBoost = 0.8;
+
+          if (appState.uiHidden) {
+            longPressTimer = setTimeout(() => {
+              setAllUiHidden(false);
+            }, 2000);
+          }
+        } else if (e.touches.length === 2) {
+          isDragging = false;
+          lastPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches.length === 1 && isDragging) {
+          const t = e.touches[0];
+          if (Math.hypot(t.clientX - dragStartX, t.clientY - dragStartY) > 12) {
+            clearTimeout(longPressTimer);
+          }
+          appState.stageX = origX + (t.clientX - dragStartX);
+          appState.stageY = origY + (t.clientY - dragStartY);
+          appState.mouseX = clamp((t.clientX / stageW) * 2 - 1, -1, 1);
+          appState.mouseY = clamp((t.clientY / stageH) * 2 - 1, -1, 1);
+        } else if (e.touches.length === 2 && lastPinchDist !== null) {
+          clearTimeout(longPressTimer);
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          appState.stageScale = clamp(appState.stageScale * (dist / lastPinchDist), 0.4, 2.8);
+          lastPinchDist = dist;
+        }
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+      isDragging = false;
+      lastPinchDist = null;
+    });
+
+    // Global Keyboard Shortcuts (H / Tab / Esc / 1-6 / Space / C)
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+
+      if (k === 'h' || e.key === 'Tab') {
+        e.preventDefault();
+        toggleAllUiHidden();
+      } else if (e.key === 'Escape' && appState.uiHidden) {
+        setAllUiHidden(false);
+      } else if (k === '1') setExpression('normal');
+      else if (k === '2') setExpression('happy');
+      else if (k === '3') setExpression('sparkle');
+      else if (k === '4') setExpression('calm');
+      else if (k === '5') setExpression('surprised');
+      else if (k === '6') setExpression('blush');
+      else if (k === 'c') calibrateNeutralPose(false);
+      else if (e.key === ' ') {
+        e.preventDefault();
+        triggerMotion('jump');
+      }
+    });
+
+    // Auto-collapse sidebar on narrow mobile screens for an unobstructed initial view
+    if (window.innerWidth < 640) {
+      document.getElementById('sidebarDock').classList.add('collapsed');
+    }
+
+    // Start Animation Loop cleanly on window load
+    let loopStarted = false;
+    function startEngine() {
+      if (loopStarted) return;
+      loopStarted = true;
+      requestAnimationFrame(mainLoop);
+    }
+    window.addEventListener('load', startEngine);
+    if (document.readyState === 'complete') startEngine();
+  </script>
+</body>
+</html>
